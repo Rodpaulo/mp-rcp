@@ -131,7 +131,7 @@ export default function CheckIn() {
   return (
     <main className="checkin">
       <header className="checkin-header">
-        <p className="checkin-brand">Matinés Pensantes</p>
+        <img className="checkin-logo" src="/logo-mp.png" alt="Matinés Pensantes" />
         <h1 className="checkin-title">Regresso à Casa de Partida</h1>
         {edition && (
           <p className="checkin-edition">

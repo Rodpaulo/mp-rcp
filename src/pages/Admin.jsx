@@ -19,7 +19,7 @@ export default function Admin() {
   return (
     <main className="admin">
       <header className="admin-bar">
-        <p className="admin-brand">Matinés Pensantes · Administração</p>
+        <img className="admin-logo" src="/logo-mp.png" alt="Matinés Pensantes" />
         {session && (
           <button type="button" className="admin-button-secondary" onClick={() => supabase.auth.signOut()}>
             Sair

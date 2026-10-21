@@ -29,12 +29,10 @@
   margin-bottom: 1.5rem;
 }
 
-.admin-brand {
-  margin: 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.admin-logo {
+  display: block;
+  height: 36px;
+  width: auto;
 }
 
 .admin-section {

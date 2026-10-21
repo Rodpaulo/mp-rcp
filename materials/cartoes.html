@@ -53,12 +53,10 @@
         outline: 1px dashed #9AA5B1; /* só no ecrã, para ver os limites */
       }
 
-      .marca {
-        margin: 0;
-        font-size: calc(var(--u) * 3.6);
-        font-weight: 600;
-        letter-spacing: 0.25em;
-        text-transform: uppercase;
+      .logo {
+        display: block;
+        width: calc(var(--w) * 0.45); /* 45% do cartão, não da área dentro do padding */
+        height: auto;
       }
 
       .qr {
@@ -108,7 +106,7 @@
     </p>
 
     <div class="cartao">
-      <p class="marca">Matinés Pensantes</p>
+      <img class="logo" src="../public/logo-mp.png" alt="Matinés Pensantes" />
       <img class="qr" src="qr-rcp.svg" alt="" />
       <div>
         <p class="frase">Chegaste? Regista a tua presença.</p>

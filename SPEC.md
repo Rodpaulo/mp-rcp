@@ -132,6 +132,7 @@ Depois (20 minutos): registar contagem de sala → exportar CSV → reconciliar 
 ## 10. PWA e materiais
 
 - `manifest.webmanifest`: nome "Matinés Pensantes · RCP", nome curto "RCP", ícone 192 e 512 (logótipo sobre navy), cor de tema navy, `display: standalone`. Sem service worker no piloto (a página precisa de rede para funcionar; cache offline só esconderia erros).
+- O admin tem a sua própria página de entrada, admin.html, com o manifesto RCP Admin (o iOS lê o manifesto ao carregar a página; a troca por JavaScript não funciona).
 - QR gerado para `https://rcp.matinespensantes.org` com margem e correcção de erro M; testado impresso em A6 e A5 a 1 m com luz fraca.
 - Texto de privacidade (5 linhas, na página): quem é o responsável (Matinés Pensantes, geral@), para quê (registo de presenças nos eventos; newsletter só com consentimento), onde ficam (base de dados na União Europeia), quanto tempo (enquanto a associação organizar o RCP), como apagar (um email para geral@).
 
