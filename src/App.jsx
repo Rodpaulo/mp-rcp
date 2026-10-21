@@ -1,11 +1,11 @@
 import { Routes, Route } from 'react-router-dom'
-import Public from './pages/Public.jsx'
+import CheckIn from './pages/CheckIn.jsx'
 import Admin from './pages/Admin.jsx'
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Public />} />
+      <Route path="/" element={<CheckIn />} />
       <Route path="/admin" element={<Admin />} />
     </Routes>
   )
