@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cartões QR · RCP</title>
+    <style>
+      /* Tamanho do cartão = página menos 10 mm de margem de cada lado.
+         --u é 1% da largura do cartão: todos os tamanhos de letra derivam dele. */
+      :root {
+        --navy: #2E3D4D;
+        --turquoise: #3AAEB8;
+        --w: 85mm;   /* A6: 105 − 20 */
+        --h: 128mm;  /* A6: 148 − 20 */
+        --u: 0.85mm;
+      }
+      :root.a5 {
+        --w: 128mm;  /* A5: 148 − 20 */
+        --h: 190mm;  /* A5: 210 − 20 */
+        --u: 1.28mm;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        color: var(--navy);
+        background: #E9ECEF;
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      }
+
+      .instrucoes {
+        max-width: 40rem;
+        margin: 0 auto;
+        padding: 1rem;
+        font-size: 15px;
+        line-height: 1.5;
+      }
+
+      .instrucoes a { color: var(--navy); }
+
+      .cartao {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        width: var(--w);
+        height: var(--h);
+        margin: 0 auto 2rem;
+        padding: calc(var(--u) * 6) calc(var(--u) * 5);
+        text-align: center;
+        background: #fff;
+        outline: 1px dashed #9AA5B1; /* só no ecrã, para ver os limites */
+      }
+
+      .marca {
+        margin: 0;
+        font-size: calc(var(--u) * 3.6);
+        font-weight: 600;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+      }
+
+      .qr {
+        display: block;
+        width: 60%;
+        height: auto;
+      }
+
+      .frase {
+        margin: 0;
+        font-size: calc(var(--u) * 7.5);
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      .endereco {
+        margin: calc(var(--u) * 2) 0 0;
+        font-size: calc(var(--u) * 4);
+      }
+
+      .rodape {
+        margin: 0;
+        padding-top: calc(var(--u) * 3);
+        font-size: calc(var(--u) * 4.5);
+        font-weight: 700;
+        border-top: calc(var(--u) * 0.6) solid var(--turquoise);
+      }
+
+      @media print {
+        html, body { background: #fff; }
+        .instrucoes { display: none; }
+        .cartao {
+          margin: 0;
+          outline: none;
+          height: calc(var(--h) - 0.5mm); /* folga para não passar para uma segunda página */
+        }
+      }
+    </style>
+    <!-- O @page é escrito pelo script abaixo, conforme o formato pedido na URL. -->
+    <style id="pagina">@page { size: A6 portrait; margin: 10mm; }</style>
+  </head>
+  <body>
+    <p class="instrucoes">
+      Formato: acrescenta <code>?formato=a6</code> (por defeito) ou <code>?formato=a5</code> ao endereço desta página
+      — <a href="?formato=a6">A6</a> · <a href="?formato=a5">A5</a>. Formato actual: <strong id="formato-actual">A6</strong>.
+      Imprimir com Ctrl+P, sem margens adicionais, escala 100%.
+    </p>
+
+    <div class="cartao">
+      <p class="marca">Matinés Pensantes</p>
+      <img class="qr" src="qr-rcp.svg" alt="" />
+      <div>
+        <p class="frase">Chegaste? Regista a tua presença.</p>
+        <p class="endereco">ou escreve rcp.matinespensantes.org</p>
+      </div>
+      <p class="rodape">Regresso à Casa de Partida</p>
+    </div>
+
+    <script>
+      const formato = new URLSearchParams(location.search).get('formato') === 'a5' ? 'a5' : 'a6'
+      document.documentElement.classList.toggle('a5', formato === 'a5')
+      document.getElementById('pagina').textContent =
+        `@page { size: ${formato.toUpperCase()} portrait; margin: 10mm; }`
+      document.getElementById('formato-actual').textContent = formato.toUpperCase()
+    </script>
+  </body>
+</html>
