@@ -23,6 +23,7 @@ Aplicação web da Matinés Pensantes (associação cultural em Bruxelas) para r
 - Nunca leio, escrevo nem peço o conteúdo de `.env`.
 - Nunca escrevo chaves em ficheiros versionados.
 - A única chave que a aplicação usa é a **publishable key** do Supabase, através das variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`. A secret key nunca é usada nem copiada.
+- Nunca apagues nem alteres .env.example; se um commit sair mal, diz-o antes de corrigir.
 
 ## Língua da interface
 
