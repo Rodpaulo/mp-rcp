@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
-import { PUBLIC_MANIFEST, removeAppleTitle, setManifest } from '../lib/manifest.js'
 import './CheckIn.css'
 
 const KEY_EMAIL = 'mp_rcp_email'
@@ -50,11 +49,6 @@ export default function CheckIn() {
   const [message, setMessage] = useState('')
   const [confirmation, setConfirmation] = useState('')
   const [showPrivacy, setShowPrivacy] = useState(false)
-
-  useEffect(() => {
-    setManifest(PUBLIC_MANIFEST)
-    removeAppleTitle()
-  }, [])
 
   useEffect(() => {
     let ignore = false
