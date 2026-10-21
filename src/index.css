@@ -1,0 +1,68 @@
+:root {
+  --navy: #2E3D4D;
+  --turquoise: #3AAEB8;
+  --background: #F7F8F9;
+  --text: #2E3D4D;
+  --muted: #5B6B7A;
+
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--text);
+  background-color: var(--background);
+  -webkit-text-size-adjust: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--background);
+}
+
+h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+  line-height: 1.2;
+  color: var(--navy);
+}
+
+a {
+  color: var(--navy);
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+.page {
+  width: 100%;
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.brand {
+  margin: 0 0 0.25rem;
+  font-weight: 600;
+  color: var(--turquoise);
+  letter-spacing: 0.02em;
+}
+
+@media (min-width: 48rem) {
+  .page {
+    padding-top: 4rem;
+  }
+
+  h1 {
+    font-size: 2.25rem;
+  }
+}
