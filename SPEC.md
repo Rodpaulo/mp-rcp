@@ -105,7 +105,7 @@ Comportamento:
 - Depois de um `ok`/`already`, o email fica guardado em `localStorage` (`mp_rcp_email`). Na visita seguinte o campo aparece preenchido, com a ligação "Não és tu? Limpar". A mesma edição não se regista duas vezes a partir do mesmo browser: se `localStorage` tiver `mp_rcp_last_edition` igual à edição aberta, a página abre já na confirmação.
 - Sem login, sem cookies de terceiros, sem analytics.
 
-Aspecto: cores da marca (navy `#2E3D4D`, turquesa `#3AAEB8`, fundo claro), tipografia do sistema, contraste alto, legível na sala do Pestana à noite. Sem animações além do estado do botão.
+Aspecto: cores do Manual de Identidade 1.1 (azul-marinho #2C3E50, turquesa #3EBDC6 e turquesa escura #1F7A82 para botões e ligações, fundo claro), Rajdhani nos títulos e Montserrat no texto, carregadas do Google Fonts com fallback para Arial; contraste alto, legível na sala do Pestana à noite; nenhum texto branco sobre turquesa nem sobre amarelo. Sem animações além do estado do botão.
 
 ## 8. Ecrã de administração — `/admin`
 
