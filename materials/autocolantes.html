@@ -96,6 +96,10 @@
         line-height: 1.2;
       }
 
+      .endereco {
+        margin-top: 0.6mm;
+      }
+
       @page { size: A4 portrait; margin: 0; }
 
       @media print {
@@ -130,7 +134,7 @@
         const cabecalho = document.createElement('p')
         cabecalho.className = 'cabecalho'
         cabecalho.textContent =
-          'Cola o próximo autocolante na lombada do livro e regista o número em rcp.matinespensantes.org → Biblioteca Circulante.'
+          'Cola o próximo autocolante na contracapa do livro e regista o número em rcp.matinespensantes.org → Biblioteca Circulante.'
         folhas.append(cabecalho)
 
         const folha = document.createElement('div')
@@ -140,7 +144,8 @@
           etiqueta.className = 'etiqueta'
           etiqueta.innerHTML =
             `<span class="numero">BC-${String(n).padStart(3, '0')}</span>` +
-            '<span class="legenda">Biblioteca Circulante · Matinés Pensantes</span>'
+            '<span class="legenda">Biblioteca Circulante · Matinés Pensantes</span>' +
+            '<span class="legenda endereco">rcp.matinespensantes.org</span>'
           folha.append(etiqueta)
         }
         folhas.append(folha)

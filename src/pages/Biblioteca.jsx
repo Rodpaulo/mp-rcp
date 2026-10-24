@@ -7,7 +7,7 @@ const TEXT = {
   empty: 'A mesa ainda está vazia. Sê a primeira pessoa a deixar um livro.',
   taken: 'Boa leitura. Quando o acabares, traz outro.',
   alreadyTaken: 'Esse livro já foi registado como levado. Se o tens na mão, diz à organização.',
-  notFound: 'Não encontramos esse número. Confirma o autocolante na lombada.',
+  notFound: 'Não encontramos esse número. Confirma o autocolante na contracapa.',
   invalidNumber: 'Esse número não parece certo. Escreve só os algarismos do autocolante.',
   invalidEmail: 'Esse email não parece completo. Vê se não falta nada.',
   closed: 'Não há nenhuma edição aberta neste momento.',
@@ -261,7 +261,10 @@ function LeaveForm({ onDone, onBack }) {
   return (
     <form className="bc-form" onSubmit={handleSubmit} noValidate>
       <h2 className="bc-subtitle">Deixo um livro</h2>
-      <p className="bc-instruction">Cola o próximo autocolante da folha na lombada e escreve aqui o número.</p>
+      <p className="bc-instruction">
+        Cola o próximo autocolante da folha na contracapa do livro, no canto de baixo, sem tapar o código de
+        barras, e escreve aqui o número.
+      </p>
 
       <NumberField id="bc-leave-number" value={number} onChange={setNumber} onBlur={checkNow} disabled={sending} />
       {isReturn && (

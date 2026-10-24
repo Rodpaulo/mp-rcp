@@ -134,6 +134,7 @@ Depois (20 minutos): registar contagem de sala → exportar CSV → reconciliar 
 - `manifest.webmanifest`: nome "Matinés Pensantes · RCP", nome curto "RCP", ícone 192 e 512 (logótipo sobre navy), cor de tema navy, `display: standalone`. Sem service worker no piloto (a página precisa de rede para funcionar; cache offline só esconderia erros).
 - O admin tem a sua própria página de entrada, admin.html, com o manifesto RCP Admin (o iOS lê o manifesto ao carregar a página; a troca por JavaScript não funciona).
 - QR gerado para `https://rcp.matinespensantes.org` com margem e correcção de erro M; testado impresso em A6 e A5 a 1 m com luz fraca.
+- Cartão do QR (`materials/cartoes.html`) em três formatos, escolhidos com `?formato=`: A4 para a porta e a mesa dos livros (um só cartão na página, margens de 15 mm, para ler a 3 m); A6 para as mesas; A5 como alternativa.
 - Texto de privacidade (5 linhas, na página): quem é o responsável (Matinés Pensantes, geral@), para quê (registo de presenças nos eventos; newsletter só com consentimento), onde ficam (base de dados na União Europeia), quanto tempo (enquanto a associação organizar o RCP), como apagar (um email para geral@).
 
 ## 11. Critérios de aceitação do piloto (go/no-go a 30 Out)
@@ -163,7 +164,7 @@ A Biblioteca Circulante é a mesa de livros do RCP: quem vem traz um livro em po
 
 ### 13.3 Princípios próprios
 - As saídas são baratas (um número e um email); as entradas são caras (título e autor). Como não há organização na mesa, as duas são self-service, mas feitas na mesa dos livros, antes ou depois da conversa — nunca durante.
-- A peça central é analógica: **autocolantes pré-numerados** (BC-001, BC-002…) numa folha na mesa. Quem deixa um livro cola o próximo autocolante na lombada e regista-o; quem leva regista o número. Ninguém atribui números.
+- A peça central é analógica: **autocolantes pré-numerados** (BC-001, BC-002…) numa folha na mesa. Quem deixa um livro cola o próximo autocolante na contracapa e regista-o; quem leva regista o número. Ninguém atribui números.
 - O público vê livros, nunca pessoas. Quem trouxe e quem levou fica no admin.
 - Rede de segurança: fotografia da mesa no início e no fim; a reconciliação corrige o que o self-service não apanhou.
 
@@ -193,15 +194,16 @@ Mesma linguagem visual da página de check-in; tratamento por tu; uma mão.
 - Cabeçalho: logótipo; "Biblioteca Circulante"; linha "Traz um livro em português. Leva outro."
 - **Na mesa hoje**: lista de `biblioteca_na_mesa()`: número, título, autor; em pequeno, "desde o RCP0x" e, se `hands > 0`, "já esteve em N casas". Se vazia: "A mesa ainda está vazia. Sê a primeira pessoa a deixar um livro."
 - Dois botões grandes: **Levo um livro** · **Deixo um livro**. Cada um abre o seu formulário no lugar da lista; "Voltar" fecha.
-- **Levo um livro**: campo "Número do autocolante" (inputmode numeric; aceita "12" ou "BC-012"); ao sair do campo, `livro_por_numero` e mostra "«Título», de Autor" ou "Não encontramos esse número. Confirma o autocolante na lombada."; campo email (preenchido de `localStorage` `mp_rcp_email` se existir); botão "Levo este". Confirmação: "Boa leitura. Quando o acabares, traz outro." `already_taken` → "Esse livro já foi registado como levado. Se o tens na mão, diz à organização."
-- **Deixo um livro**: "Cola o próximo autocolante da folha na lombada e escreve aqui o número." Campos: número; título; autor (opcional); "Porque o trazes? (uma linha, opcional)"; email (opcional, preenchido se existir). Ao sair do campo número, `livro_por_numero`: se existir e estiver `levado` → "Este número é «Título». Se o livro voltou à mesa, confirma." e esconde título/autor; se existir e estiver na mesa → "Esse número já está em uso. Usa o próximo autocolante da folha." Botão "Deixo este". Confirmação: "Obrigado. O «Título» já faz parte da Biblioteca." / `returned` → "Bem-vindo de volta, «Título»."
+- **Levo um livro**: campo "Número do autocolante" (inputmode numeric; aceita "12" ou "BC-012"); ao sair do campo, `livro_por_numero` e mostra "«Título», de Autor" ou "Não encontramos esse número. Confirma o autocolante na contracapa."; campo email (preenchido de `localStorage` `mp_rcp_email` se existir); botão "Levo este". Confirmação: "Boa leitura. Quando o acabares, traz outro." `already_taken` → "Esse livro já foi registado como levado. Se o tens na mão, diz à organização."
+- **Deixo um livro**: "Cola o próximo autocolante da folha na contracapa do livro, no canto de baixo, sem tapar o código de barras, e escreve aqui o número." Campos: número; título; autor (opcional); "Porque o trazes? (uma linha, opcional)"; email (opcional, preenchido se existir). Ao sair do campo número, `livro_por_numero`: se existir e estiver `levado` → "Este número é «Título». Se o livro voltou à mesa, confirma." e esconde título/autor; se existir e estiver na mesa → "Esse número já está em uso. Usa o próximo autocolante da folha." Botão "Deixo este". Confirmação: "Obrigado. O «Título» já faz parte da Biblioteca." / `returned` → "Bem-vindo de volta, «Título»."
 - Erros de rede com a mesma frase das outras páginas. `localStorage`: guarda `mp_rcp_email` se a pessoa o escreveu aqui e ainda não existia.
 - Rodapé: ligação "Como tratamos os teus dados" (mesmo texto do check-in, com "e os livros que deixas ou levas na Biblioteca Circulante" acrescentado à primeira frase).
 - Não há QR próprio para a Biblioteca. A página de check-in dá o caminho: na confirmação, uma ligação em destaque "Biblioteca Circulante →" para `/biblioteca`; no estado de formulário, uma ligação discreta em baixo, "Só vens à Biblioteca?", para quem não quer fazer check-in.
 
 ### 13.7 Materiais
-- Não há QR nem cartão próprios para a Biblioteca. O cartão único (`materials/cartoes.html`) ganha, por baixo da mensagem principal e separado por uma linha fina, um bloco em corpo menor: "**Biblioteca Circulante** · Traz um livro em português, leva outro. Deixas um? Cola o próximo autocolante na lombada e regista o número. Levas um? Regista o número."
-- Folha de autocolantes (`materials/autocolantes.html`): BC-001 a BC-096 (quatro folhas completas), numeração grande e "Biblioteca Circulante · Matinés Pensantes" em pequeno, em grelha para etiquetas A4 removíveis (por omissão 3 × 8, 63,5 × 33,9 mm, tipo Avery L7159; margens e dimensões como variáveis CSS no topo do ficheiro). O cabeçalho da folha, fora das etiquetas, repete a instrução: "Cola o próximo autocolante na lombada do livro e regista o número em rcp.matinespensantes.org → Biblioteca Circulante."
+- Não há QR nem cartão próprios para a Biblioteca. O cartão único (`materials/cartoes.html`) ganha, por baixo da mensagem principal e separado por uma linha fina, um bloco em corpo menor: "**Biblioteca Circulante** · Traz um livro em português, leva outro. Deixas um? Cola o próximo autocolante na contracapa e regista o número. Levas um? Regista o número." O cartão imprime-se em A4 (um só cartão na página, para a porta e a mesa dos livros), A6 (para as mesas) ou A5.
+- Folha de autocolantes (`materials/autocolantes.html`): BC-001 a BC-096 (quatro folhas completas), numeração grande e, em pequeno, "Biblioteca Circulante · Matinés Pensantes" e "rcp.matinespensantes.org", em grelha para etiquetas A4 removíveis (por omissão 3 × 8, 63,5 × 33,9 mm, tipo Avery L7159; margens e dimensões como variáveis CSS no topo do ficheiro). O cabeçalho da folha, fora das etiquetas, repete a instrução: "Cola o próximo autocolante na contracapa do livro e regista o número em rcp.matinespensantes.org → Biblioteca Circulante."
+- Colocação: contracapa, canto inferior, sem tapar o código de barras do ISBN (reservado para leitura futura pela câmara).
 
 ### 13.8 Operação por edição
 Antes: folha de autocolantes e o cartão único na mesa dos livros; os fundadores levam três livros cada (RCP06).
@@ -212,7 +214,7 @@ Depois: fotografia da mesa no fim; na reconciliação, conferir os números das 
 - Deixar um livro novo, levar um livro, devolver um livro que tinha saído, e os erros (número inválido, em uso, não encontrado, já levado), testados no telemóvel com dados móveis.
 - Lista "na mesa hoje" correcta depois de cada gesto.
 - O anon não lê `books` nem `book_movements` directamente (consulta REST devolve `[]`).
-- Cartão reimpresso com o bloco da Biblioteca; folha de autocolantes impressa; autocolante aguenta numa lombada.
+- Cartão reimpresso com o bloco da Biblioteca; folha de autocolantes impressa; autocolante aguenta numa contracapa.
 - Se falhar: Plano B de 13.1.
 
 ### 13.10 Depois do RCP06

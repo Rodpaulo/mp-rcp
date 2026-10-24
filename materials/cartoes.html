@@ -21,6 +21,17 @@
         --u: 1.28mm;
       }
 
+      /* A4: um só cartão para a porta e a mesa dos livros, para ler a 3 metros.
+         Margens de 15 mm; logótipo e QR com medidas fixas. */
+      :root.a4 {
+        --w: 180mm;  /* A4: 210 − 30 */
+        --h: 267mm;  /* A4: 297 − 30 */
+        --u: 1.6mm;
+      }
+      :root.a4 .logo { width: 70mm; }
+      :root.a4 .qr { width: 110mm; }
+      :root.a4 .cartao { padding: 8mm calc(var(--u) * 5); }
+
       * { box-sizing: border-box; }
 
       html, body {
@@ -124,8 +135,10 @@
   </head>
   <body>
     <p class="instrucoes">
-      Formato: acrescenta <code>?formato=a6</code> (por defeito) ou <code>?formato=a5</code> ao endereço desta página
-      — <a href="?formato=a6">A6</a> · <a href="?formato=a5">A5</a>. Formato actual: <strong id="formato-actual">A6</strong>.
+      Formato: acrescenta <code>?formato=a6</code> (por defeito, para as mesas), <code>?formato=a5</code> ou
+      <code>?formato=a4</code> (para a porta e a mesa dos livros) ao endereço desta página
+      — <a href="?formato=a6">A6</a> · <a href="?formato=a5">A5</a> · <a href="?formato=a4">A4</a>.
+      Formato actual: <strong id="formato-actual">A6</strong>.
       Imprimir com Ctrl+P, sem margens adicionais, escala 100%.
     </p>
 
@@ -139,7 +152,7 @@
       <div class="biblioteca">
         <p>
           <strong>Biblioteca Circulante</strong>
-          Traz um livro em português, leva outro. Deixas um? Cola o próximo autocolante na lombada e
+          Traz um livro em português, leva outro. Deixas um? Cola o próximo autocolante na contracapa e
           regista o número. Levas um? Regista o número.
         </p>
       </div>
@@ -147,10 +160,13 @@
     </div>
 
     <script>
-      const formato = new URLSearchParams(location.search).get('formato') === 'a5' ? 'a5' : 'a6'
+      const pedido = new URLSearchParams(location.search).get('formato')
+      const formato = ['a4', 'a5', 'a6'].includes(pedido) ? pedido : 'a6'
+      const margem = formato === 'a4' ? '15mm' : '10mm'
       document.documentElement.classList.toggle('a5', formato === 'a5')
+      document.documentElement.classList.toggle('a4', formato === 'a4')
       document.getElementById('pagina').textContent =
-        `@page { size: ${formato.toUpperCase()} portrait; margin: 10mm; }`
+        `@page { size: ${formato.toUpperCase()} portrait; margin: ${margem}; }`
       document.getElementById('formato-actual').textContent = formato.toUpperCase()
     </script>
   </body>
