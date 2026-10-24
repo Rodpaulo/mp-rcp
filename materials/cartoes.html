@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet" />
     <style>
-      /* Um só cartão A4 para a porta e a mesa dos livros.
+      /* Um só cartão A4 para a porta e a mesa dos livros. MP_cartao_A4_RCP.pdf é impresso a partir desta página.
          Página A4 menos 15 mm de margem de cada lado = 180 × 267 mm. Tudo em milímetros. */
       :root {
         --navy: #2C3E50;
-        --turquoise: #3EBDC6;
+        --turquoise-dark: #1F7A82;
         --yellow: #EAB81C;
       }
 
@@ -53,10 +53,22 @@
         height: auto;
       }
 
+      /* A única turquesa do cartão: o título do evento. */
+      .evento {
+        margin: 0;
+        font-family: Rajdhani, Arial, sans-serif;
+        font-size: 8mm;
+        font-weight: 600;
+        line-height: 1.1;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--turquoise-dark);
+      }
+
       .qr {
         display: block;
-        width: 90mm;
-        height: 90mm;
+        width: 80mm;
+        height: 80mm;
         margin: 2mm 0;
       }
 
@@ -121,25 +133,13 @@
       }
 
       .biblioteca li::before {
-        content: counter(passo) '.';
+        content: counter(passo);
         position: absolute;
         left: 0;
         font-family: Rajdhani, Arial, sans-serif;
         font-size: 6.5mm;
         font-weight: 700;
         line-height: 1;
-      }
-
-      /* A única turquesa do cartão: a linha do rodapé. */
-      .rodape {
-        width: 100%;
-        margin: 0;
-        padding-top: 4mm;
-        font-family: Rajdhani, Arial, sans-serif;
-        font-size: 7mm;
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        border-top: 1.5mm solid var(--turquoise);
       }
 
       @page { size: A4 portrait; margin: 15mm; }
@@ -158,10 +158,12 @@
   <body>
     <p class="instrucoes">
       Cartão A4 para a porta e a mesa dos livros. Imprimir com Ctrl+P em A4, escala 100%, sem margens adicionais.
+      Versão PDF pronta a imprimir: MP_cartao_A4_RCP.pdf.
     </p>
 
     <div class="cartao">
       <img class="logo" src="../public/logo-mp.png" alt="Matinés Pensantes" />
+      <p class="evento">Regresso à Casa de Partida</p>
       <img class="qr" src="qr-rcp.svg" alt="" />
       <div>
         <p class="frase">Chegaste?<br />Regista a tua presença.</p>
@@ -179,7 +181,6 @@
           </ol>
         </div>
       </div>
-      <p class="rodape">Regresso à Casa de Partida</p>
     </div>
   </body>
 </html>
