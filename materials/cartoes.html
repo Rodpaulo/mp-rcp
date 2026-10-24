@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cartões QR · RCP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Rajdhani:wght@700&display=swap" rel="stylesheet" />
     <style>
       /* Tamanho do cartão = página menos 10 mm de margem de cada lado.
          --u é 1% da largura do cartão: todos os tamanhos de letra derivam dele. */
@@ -59,7 +62,7 @@
         width: var(--w);
         height: var(--h);
         margin: 0 auto 2rem;
-        padding: calc(var(--u) * 6) calc(var(--u) * 5);
+        padding: calc(var(--u) * 4.5) calc(var(--u) * 5);
         text-align: center;
         background: #fff;
         outline: 1px dashed #9AA5B1; /* só no ecrã, para ver os limites */
@@ -73,7 +76,7 @@
 
       .qr {
         display: block;
-        width: 60%;
+        width: 54%; /* era 60%: os quatro passos da Biblioteca precisam do espaço no A6 e no A5 */
         height: auto;
       }
 
@@ -92,24 +95,52 @@
       .biblioteca {
         width: 100%;
         margin: 0;
-        padding-top: calc(var(--u) * 2.5);
-        font-size: calc(var(--u) * 3.4);
-        line-height: 1.35;
+        padding-top: calc(var(--u) * 1.8);
+        font-size: calc(var(--u) * 3.2); /* 7,7 pt no A6; nunca abaixo de 7 pt */
+        line-height: 1.25;
         border-top: 1px solid var(--navy);
       }
 
       /* O único amarelo do cartão: a barra da Biblioteca. */
-      .biblioteca p {
-        margin: 0;
+      .biblioteca-passos {
         padding-left: calc(var(--u) * 2.5);
+        font-family: Montserrat, Arial, sans-serif;
         text-align: left;
         border-left: 4px solid var(--yellow);
       }
 
-      .biblioteca strong {
-        display: block;
-        margin-bottom: calc(var(--u) * 0.8);
-        font-size: calc(var(--u) * 4);
+      .biblioteca h2 {
+        margin: 0;
+        font-family: Rajdhani, Arial, sans-serif;
+        font-size: calc(var(--u) * 4.6);
+        font-weight: 700;
+        line-height: 1.1;
+      }
+
+      .biblioteca-subtitulo {
+        margin: 0 0 calc(var(--u) * 0.6);
+        font-weight: 600;
+      }
+
+      .biblioteca ol {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: passo;
+      }
+
+      .biblioteca li {
+        position: relative;
+        padding-left: calc(var(--u) * 3.6);
+        counter-increment: passo;
+      }
+
+      .biblioteca li::before {
+        content: counter(passo) '.';
+        position: absolute;
+        left: 0;
+        font-family: Rajdhani, Arial, sans-serif;
+        font-weight: 700;
       }
 
       .rodape {
@@ -150,11 +181,16 @@
         <p class="endereco">ou escreve rcp.matinespensantes.org</p>
       </div>
       <div class="biblioteca">
-        <p>
-          <strong>Biblioteca Circulante</strong>
-          Traz um livro em português, leva outro. Deixas um? Cola o próximo autocolante na contracapa e
-          regista o número. Levas um? Regista o número.
-        </p>
+        <div class="biblioteca-passos">
+          <h2>Biblioteca Circulante</h2>
+          <p class="biblioteca-subtitulo">Traz um livro em português. Leva outro.</p>
+          <ol>
+            <li>Lê o código e regista a tua presença.</li>
+            <li>Carrega em «Biblioteca Circulante».</li>
+            <li>Deixas um livro? Cola o próximo autocolante na contracapa e regista o número.</li>
+            <li>Levas um livro? Regista o número que está na contracapa.</li>
+          </ol>
+        </div>
       </div>
       <p class="rodape">Regresso à Casa de Partida</p>
     </div>
