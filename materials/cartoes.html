@@ -3,37 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cartões QR · RCP</title>
+    <title>Cartão QR · RCP</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Rajdhani:wght@700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet" />
     <style>
-      /* Tamanho do cartão = página menos 10 mm de margem de cada lado.
-         --u é 1% da largura do cartão: todos os tamanhos de letra derivam dele. */
+      /* Um só cartão A4 para a porta e a mesa dos livros.
+         Página A4 menos 15 mm de margem de cada lado = 180 × 267 mm. Tudo em milímetros. */
       :root {
         --navy: #2C3E50;
         --turquoise: #3EBDC6;
         --yellow: #EAB81C;
-        --w: 85mm;   /* A6: 105 − 20 */
-        --h: 128mm;  /* A6: 148 − 20 */
-        --u: 0.85mm;
       }
-      :root.a5 {
-        --w: 128mm;  /* A5: 148 − 20 */
-        --h: 190mm;  /* A5: 210 − 20 */
-        --u: 1.28mm;
-      }
-
-      /* A4: um só cartão para a porta e a mesa dos livros, para ler a 3 metros.
-         Margens de 15 mm; logótipo e QR com medidas fixas. */
-      :root.a4 {
-        --w: 180mm;  /* A4: 210 − 30 */
-        --h: 267mm;  /* A4: 297 − 30 */
-        --u: 1.6mm;
-      }
-      :root.a4 .logo { width: 70mm; }
-      :root.a4 .qr { width: 110mm; }
-      :root.a4 .cartao { padding: 8mm calc(var(--u) * 5); }
 
       * { box-sizing: border-box; }
 
@@ -41,28 +22,26 @@
         margin: 0;
         color: var(--navy);
         background: #E9ECEF;
-        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        font-family: Montserrat, Arial, sans-serif;
       }
 
       .instrucoes {
-        max-width: 40rem;
+        max-width: 180mm;
         margin: 0 auto;
-        padding: 1rem;
+        padding: 1rem 0;
         font-size: 15px;
         line-height: 1.5;
       }
-
-      .instrucoes a { color: var(--navy); }
 
       .cartao {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: space-between;
-        width: var(--w);
-        height: var(--h);
+        width: 180mm;
+        height: 267mm;
         margin: 0 auto 2rem;
-        padding: calc(var(--u) * 4.5) calc(var(--u) * 5);
+        padding: 6mm 8mm;
         text-align: center;
         background: #fff;
         outline: 1px dashed #9AA5B1; /* só no ecrã, para ver os limites */
@@ -70,55 +49,55 @@
 
       .logo {
         display: block;
-        width: calc(var(--w) * 0.45); /* 45% do cartão, não da área dentro do padding */
+        width: 60mm;
         height: auto;
       }
 
       .qr {
         display: block;
-        width: 54%; /* era 60%: os quatro passos da Biblioteca precisam do espaço no A6 e no A5 */
-        height: auto;
+        width: 90mm;
+        height: 90mm;
+        margin: 2mm 0;
       }
 
       .frase {
         margin: 0;
-        font-size: calc(var(--u) * 7.5);
+        font-family: Rajdhani, Arial, sans-serif;
+        font-size: 12mm;
         font-weight: 700;
-        line-height: 1.2;
+        line-height: 1.1;
       }
 
       .endereco {
-        margin: calc(var(--u) * 2) 0 0;
-        font-size: calc(var(--u) * 4);
+        margin: 3mm 0 0;
+        font-size: 5.5mm;
+        font-weight: 400;
       }
 
       .biblioteca {
         width: 100%;
-        margin: 0;
-        padding-top: calc(var(--u) * 1.8);
-        font-size: calc(var(--u) * 3.2); /* 7,7 pt no A6; nunca abaixo de 7 pt */
-        line-height: 1.25;
-        border-top: 1px solid var(--navy);
+        padding-top: 6mm;
+        border-top: 0.3mm solid var(--navy);
       }
 
       /* O único amarelo do cartão: a barra da Biblioteca. */
       .biblioteca-passos {
-        padding-left: calc(var(--u) * 2.5);
-        font-family: Montserrat, Arial, sans-serif;
+        padding-left: 6mm;
         text-align: left;
-        border-left: 4px solid var(--yellow);
+        border-left: 1.5mm solid var(--yellow);
       }
 
       .biblioteca h2 {
         margin: 0;
         font-family: Rajdhani, Arial, sans-serif;
-        font-size: calc(var(--u) * 4.6);
+        font-size: 9mm;
         font-weight: 700;
         line-height: 1.1;
       }
 
       .biblioteca-subtitulo {
-        margin: 0 0 calc(var(--u) * 0.6);
+        margin: 1.5mm 0 4mm;
+        font-size: 5mm;
         font-weight: 600;
       }
 
@@ -131,8 +110,14 @@
 
       .biblioteca li {
         position: relative;
-        padding-left: calc(var(--u) * 3.6);
+        padding-left: 9mm;
+        font-size: 4.6mm;
+        line-height: 1.35;
         counter-increment: passo;
+      }
+
+      .biblioteca li + li {
+        margin-top: 2.5mm;
       }
 
       .biblioteca li::before {
@@ -140,16 +125,24 @@
         position: absolute;
         left: 0;
         font-family: Rajdhani, Arial, sans-serif;
+        font-size: 6.5mm;
         font-weight: 700;
+        line-height: 1;
       }
 
+      /* A única turquesa do cartão: a linha do rodapé. */
       .rodape {
+        width: 100%;
         margin: 0;
-        padding-top: calc(var(--u) * 3);
-        font-size: calc(var(--u) * 4.5);
-        font-weight: 700;
-        border-top: calc(var(--u) * 0.6) solid var(--turquoise);
+        padding-top: 4mm;
+        font-family: Rajdhani, Arial, sans-serif;
+        font-size: 7mm;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        border-top: 1.5mm solid var(--turquoise);
       }
+
+      @page { size: A4 portrait; margin: 15mm; }
 
       @media print {
         html, body { background: #fff; }
@@ -157,27 +150,21 @@
         .cartao {
           margin: 0;
           outline: none;
-          height: calc(var(--h) - 0.5mm); /* folga para não passar para uma segunda página */
+          height: 266.5mm; /* folga para não passar para uma segunda folha */
         }
       }
     </style>
-    <!-- O @page é escrito pelo script abaixo, conforme o formato pedido na URL. -->
-    <style id="pagina">@page { size: A6 portrait; margin: 10mm; }</style>
   </head>
   <body>
     <p class="instrucoes">
-      Formato: acrescenta <code>?formato=a6</code> (por defeito, para as mesas), <code>?formato=a5</code> ou
-      <code>?formato=a4</code> (para a porta e a mesa dos livros) ao endereço desta página
-      — <a href="?formato=a6">A6</a> · <a href="?formato=a5">A5</a> · <a href="?formato=a4">A4</a>.
-      Formato actual: <strong id="formato-actual">A6</strong>.
-      Imprimir com Ctrl+P, sem margens adicionais, escala 100%.
+      Cartão A4 para a porta e a mesa dos livros. Imprimir com Ctrl+P em A4, escala 100%, sem margens adicionais.
     </p>
 
     <div class="cartao">
       <img class="logo" src="../public/logo-mp.png" alt="Matinés Pensantes" />
       <img class="qr" src="qr-rcp.svg" alt="" />
       <div>
-        <p class="frase">Chegaste? Regista a tua presença.</p>
+        <p class="frase">Chegaste?<br />Regista a tua presença.</p>
         <p class="endereco">ou escreve rcp.matinespensantes.org</p>
       </div>
       <div class="biblioteca">
@@ -194,16 +181,5 @@
       </div>
       <p class="rodape">Regresso à Casa de Partida</p>
     </div>
-
-    <script>
-      const pedido = new URLSearchParams(location.search).get('formato')
-      const formato = ['a4', 'a5', 'a6'].includes(pedido) ? pedido : 'a6'
-      const margem = formato === 'a4' ? '15mm' : '10mm'
-      document.documentElement.classList.toggle('a5', formato === 'a5')
-      document.documentElement.classList.toggle('a4', formato === 'a4')
-      document.getElementById('pagina').textContent =
-        `@page { size: ${formato.toUpperCase()} portrait; margin: ${margem}; }`
-      document.getElementById('formato-actual').textContent = formato.toUpperCase()
-    </script>
   </body>
 </html>
