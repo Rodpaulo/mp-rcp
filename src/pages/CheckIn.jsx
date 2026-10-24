@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
+import { KEY_EMAIL, KEY_LAST_EDITION, readKey, removeKey, writeKey } from '../lib/storage.js'
 import './CheckIn.css'
-
-const KEY_EMAIL = 'mp_rcp_email'
-const KEY_LAST_EDITION = 'mp_rcp_last_edition'
 
 const TEXT = {
   ok: 'Bem-vindo/a de volta à Casa de Partida. Boa conversa.',
@@ -11,31 +10,6 @@ const TEXT = {
   invalid: 'Esse email não parece completo. Vê se não falta nada.',
   closed: 'Não há nenhuma edição aberta neste momento.',
   error: 'Não conseguimos registar agora. Tenta outra vez daqui a um minuto, ou diz à organização.',
-}
-
-// O localStorage pode falhar (navegação privada em alguns browsers): nesse caso, segue sem memória.
-function readKey(key) {
-  try {
-    return localStorage.getItem(key)
-  } catch {
-    return null
-  }
-}
-
-function writeKey(key, value) {
-  try {
-    localStorage.setItem(key, value)
-  } catch {
-    // sem memória neste browser
-  }
-}
-
-function removeKey(key) {
-  try {
-    localStorage.removeItem(key)
-  } catch {
-    // sem memória neste browser
-  }
 }
 
 export default function CheckIn() {
@@ -147,9 +121,14 @@ export default function CheckIn() {
       )}
 
       {stage === 'done' && (
-        <p className="checkin-confirmation" role="status">
-          {confirmation}
-        </p>
+        <>
+          <p className="checkin-confirmation" role="status">
+            {confirmation}
+          </p>
+          <Link className="checkin-library" to="/biblioteca">
+            Biblioteca Circulante →
+          </Link>
+        </>
       )}
 
       {stage === 'form' && (
@@ -197,6 +176,10 @@ export default function CheckIn() {
           <button type="submit" className="checkin-button" disabled={sending}>
             {sending ? 'Um momento…' : 'Estou cá'}
           </button>
+
+          <Link className="checkin-only-library" to="/biblioteca">
+            Só vens à Biblioteca?
+          </Link>
         </form>
       )}
 

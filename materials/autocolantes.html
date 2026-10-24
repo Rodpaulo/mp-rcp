@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Autocolantes · Biblioteca Circulante</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@700&display=swap" rel="stylesheet" />
+    <style>
+      /* Folha A4 de etiquetas removíveis. Por omissão: Avery L7159 (3 × 8, 63,5 × 33,9 mm).
+         Para outra folha, mede-a e ajusta só estas variáveis. */
+      :root {
+        --navy: #2E3D4D;
+
+        --folha-largura: 210mm;     /* A4 */
+        --folha-altura: 297mm;      /* A4 */
+        --margem-topo: 12.9mm;      /* do topo da folha ao topo da primeira fila */
+        --margem-esquerda: 7.25mm;  /* da esquerda da folha à esquerda da primeira coluna */
+        --colunas: 3;
+        --filas: 8;
+        --etiqueta-largura: 63.5mm;
+        --etiqueta-altura: 33.9mm;
+        --espaco-colunas: 2.5mm;    /* entre colunas */
+        --espaco-filas: 0mm;        /* entre filas */
+        --margem-interior: 2mm;     /* folga do texto dentro de cada etiqueta */
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        color: var(--navy);
+        background: #E9ECEF;
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      }
+
+      .instrucoes {
+        max-width: 210mm;
+        margin: 0 auto;
+        padding: 1rem;
+        font-size: 15px;
+        line-height: 1.5;
+      }
+
+      .cabecalho {
+        width: var(--folha-largura);
+        margin: 0 auto 0.5rem;
+        font-size: 15px;
+        font-weight: 600;
+      }
+
+      .folha {
+        display: grid;
+        grid-template-columns: repeat(var(--colunas), var(--etiqueta-largura));
+        grid-template-rows: repeat(var(--filas), var(--etiqueta-altura));
+        column-gap: var(--espaco-colunas);
+        row-gap: var(--espaco-filas);
+        align-content: start;
+        width: var(--folha-largura);
+        height: var(--folha-altura);
+        margin: 0 auto 2rem;
+        padding: var(--margem-topo) 0 0 var(--margem-esquerda);
+        overflow: hidden;
+        background: #fff;
+      }
+
+      .etiqueta {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: var(--margem-interior);
+        text-align: center;
+        outline: 1px dashed #9AA5B1; /* só no ecrã, para ver os limites */
+        outline-offset: -1px;
+      }
+
+      .numero {
+        font-family: Rajdhani, 'Arial Narrow', 'Roboto Condensed', Arial, sans-serif;
+        font-size: 15mm;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: 0.02em;
+      }
+
+      .legenda {
+        margin-top: 1.5mm;
+        font-size: 2.6mm;
+        line-height: 1.2;
+      }
+
+      @page { size: A4 portrait; margin: 0; }
+
+      @media print {
+        html, body { background: #fff; }
+        .instrucoes, .cabecalho { display: none; }
+        .folha {
+          margin: 0;
+          height: calc(var(--folha-altura) - 0.5mm); /* folga para não passar para uma página extra */
+          break-after: page;
+        }
+        .folha:last-of-type { break-after: auto; }
+        .etiqueta { outline: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <p class="instrucoes">
+      Imprimir com Ctrl+P, escala 100%, sem margens adicionais.
+    </p>
+
+    <!-- As folhas são geradas pelo script abaixo: BC-001 a BC-096, quatro folhas de 24. -->
+    <div id="folhas"></div>
+
+    <script>
+      const PRIMEIRO = 1
+      const ULTIMO = 96
+      const POR_FOLHA = 24
+
+      const folhas = document.getElementById('folhas')
+      for (let inicio = PRIMEIRO; inicio <= ULTIMO; inicio += POR_FOLHA) {
+        const cabecalho = document.createElement('p')
+        cabecalho.className = 'cabecalho'
+        cabecalho.textContent =
+          'Cola o próximo autocolante na lombada do livro e regista o número em rcp.matinespensantes.org → Biblioteca Circulante.'
+        folhas.append(cabecalho)
+
+        const folha = document.createElement('div')
+        folha.className = 'folha'
+        for (let n = inicio; n < inicio + POR_FOLHA && n <= ULTIMO; n++) {
+          const etiqueta = document.createElement('div')
+          etiqueta.className = 'etiqueta'
+          etiqueta.innerHTML =
+            `<span class="numero">BC-${String(n).padStart(3, '0')}</span>` +
+            '<span class="legenda">Biblioteca Circulante · Matinés Pensantes</span>'
+          folha.append(etiqueta)
+        }
+        folhas.append(folha)
+      }
+    </script>
+  </body>
+</html>

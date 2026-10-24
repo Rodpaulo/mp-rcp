@@ -201,7 +201,7 @@ Mesma linguagem visual da página de check-in; tratamento por tu; uma mão.
 
 ### 13.7 Materiais
 - Não há QR nem cartão próprios para a Biblioteca. O cartão único (`materials/cartoes.html`) ganha, por baixo da mensagem principal e separado por uma linha fina, um bloco em corpo menor: "**Biblioteca Circulante** · Traz um livro em português, leva outro. Deixas um? Cola o próximo autocolante na lombada e regista o número. Levas um? Regista o número."
-- Folha de autocolantes (`materials/autocolantes.html`): BC-001 a BC-080, numeração grande e "Biblioteca Circulante · Matinés Pensantes" em pequeno, em grelha para etiquetas A4 removíveis (por omissão 3 × 8, 63,5 × 33,9 mm, tipo Avery L7159; margens e dimensões como variáveis CSS no topo do ficheiro). O cabeçalho da folha, fora das etiquetas, repete a instrução: "Cola o próximo autocolante na lombada do livro e regista o número em rcp.matinespensantes.org → Biblioteca Circulante."
+- Folha de autocolantes (`materials/autocolantes.html`): BC-001 a BC-096 (quatro folhas completas), numeração grande e "Biblioteca Circulante · Matinés Pensantes" em pequeno, em grelha para etiquetas A4 removíveis (por omissão 3 × 8, 63,5 × 33,9 mm, tipo Avery L7159; margens e dimensões como variáveis CSS no topo do ficheiro). O cabeçalho da folha, fora das etiquetas, repete a instrução: "Cola o próximo autocolante na lombada do livro e regista o número em rcp.matinespensantes.org → Biblioteca Circulante."
 
 ### 13.8 Operação por edição
 Antes: folha de autocolantes e o cartão único na mesa dos livros; os fundadores levam três livros cada (RCP06).

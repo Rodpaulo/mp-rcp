@@ -116,6 +116,35 @@
   line-height: 1.4;
 }
 
+/* Botão secundário: contorno navy, fundo claro. */
+.checkin-library {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  margin-top: 2rem;
+  padding: 0.75rem 1rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--navy);
+  text-decoration: none;
+  background: #fff;
+  border: 2px solid var(--navy);
+  border-radius: 8px;
+}
+
+.checkin-library:focus-visible {
+  outline: 3px solid var(--navy);
+  outline-offset: 2px;
+}
+
+.checkin-only-library {
+  align-self: center;
+  margin-top: 2rem;
+  font-size: 0.9375rem;
+  color: var(--navy);
+}
+
 .checkin-footer {
   margin-top: 3rem;
 }
