@@ -6,7 +6,7 @@
   "scope": "/admin",
   "display": "standalone",
   "background_color": "#FFFFFF",
-  "theme_color": "#2E3D4D",
+  "theme_color": "#2C3E50",
   "lang": "pt-PT",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

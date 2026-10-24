@@ -11,7 +11,8 @@
       /* Folha A4 de etiquetas removíveis. Por omissão: Avery L7159 (3 × 8, 63,5 × 33,9 mm).
          Para outra folha, mede-a e ajusta só estas variáveis. */
       :root {
-        --navy: #2E3D4D;
+        --navy: #2C3E50;
+        --yellow: #EAB81C;          /* fundo das etiquetas: a cor da Biblioteca Circulante */
 
         --folha-largura: 210mm;     /* A4 */
         --folha-altura: 297mm;      /* A4 */
@@ -72,6 +73,10 @@
         justify-content: center;
         padding: var(--margem-interior);
         text-align: center;
+        color: var(--navy);
+        background: var(--yellow);
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
         outline: 1px dashed #9AA5B1; /* só no ecrã, para ver os limites */
         outline-offset: -1px;
       }
@@ -87,6 +92,7 @@
       .legenda {
         margin-top: 1.5mm;
         font-size: 2.6mm;
+        font-weight: 600;
         line-height: 1.2;
       }
 
@@ -108,6 +114,7 @@
   <body>
     <p class="instrucoes">
       Imprimir com Ctrl+P, escala 100%, sem margens adicionais.
+      Em «Mais definições», activa «Gráficos de fundo» para sair o amarelo.
     </p>
 
     <!-- As folhas são geradas pelo script abaixo: BC-001 a BC-096, quatro folhas de 24. -->

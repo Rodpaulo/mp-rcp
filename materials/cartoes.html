@@ -8,8 +8,9 @@
       /* Tamanho do cartão = página menos 10 mm de margem de cada lado.
          --u é 1% da largura do cartão: todos os tamanhos de letra derivam dele. */
       :root {
-        --navy: #2E3D4D;
-        --turquoise: #3AAEB8;
+        --navy: #2C3E50;
+        --turquoise: #3EBDC6;
+        --yellow: #EAB81C;
         --w: 85mm;   /* A6: 105 − 20 */
         --h: 128mm;  /* A6: 148 − 20 */
         --u: 0.85mm;
@@ -86,6 +87,14 @@
         border-top: 1px solid var(--navy);
       }
 
+      /* O único amarelo do cartão: a barra da Biblioteca. */
+      .biblioteca p {
+        margin: 0;
+        padding-left: calc(var(--u) * 2.5);
+        text-align: left;
+        border-left: 4px solid var(--yellow);
+      }
+
       .biblioteca strong {
         display: block;
         margin-bottom: calc(var(--u) * 0.8);
@@ -127,11 +136,13 @@
         <p class="frase">Chegaste? Regista a tua presença.</p>
         <p class="endereco">ou escreve rcp.matinespensantes.org</p>
       </div>
-      <p class="biblioteca">
-        <strong>Biblioteca Circulante</strong>
-        Traz um livro em português, leva outro. Deixas um? Cola o próximo autocolante na lombada e
-        regista o número. Levas um? Regista o número.
-      </p>
+      <div class="biblioteca">
+        <p>
+          <strong>Biblioteca Circulante</strong>
+          Traz um livro em português, leva outro. Deixas um? Cola o próximo autocolante na lombada e
+          regista o número. Levas um? Regista o número.
+        </p>
+      </div>
       <p class="rodape">Regresso à Casa de Partida</p>
     </div>
 

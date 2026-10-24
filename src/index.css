@@ -1,11 +1,22 @@
+/* Cores e letras do Manual de Identidade 1.1. */
 :root {
-  --navy: #2E3D4D;
-  --turquoise: #3AAEB8;
-  --background: #F7F8F9;
-  --text: #2E3D4D;
-  --muted: #5B6B7A;
+  --navy: #2C3E50;           /* todo o texto e os fundos escuros */
+  --turquoise: #3EBDC6;      /* superfícies, faixas, fundos; nunca texto, nunca texto branco por cima */
+  --turquoise-dark: #1F7A82; /* ligações e botões sobre branco, com texto branco */
+  --carmine: #C01C36;        /* destaques institucionais */
+  --grey: #828487;
+  --grey-light: #EDEDED;
+  --yellow: #EAB81C;         /* Biblioteca Circulante; texto por cima sempre navy */
 
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* Fundo da página e nomes antigos que o admin ainda usa. Texto corrido só em navy. */
+  --background: #F7F8F9;
+  --text: var(--navy);
+  --muted: var(--navy);
+
+  --font-title: Rajdhani, Arial, sans-serif;
+  --font-text: Montserrat, Arial, sans-serif;
+
+  font-family: var(--font-text);
   font-size: 18px;
   line-height: 1.5;
   color: var(--text);
@@ -32,8 +43,16 @@ h1 {
   color: var(--navy);
 }
 
+/* Títulos em Rajdhani, com maiúscula inicial (nunca em maiúsculas). */
+h1,
+h2,
+h3 {
+  font-family: var(--font-title);
+  font-weight: 700;
+}
+
 a {
-  color: var(--navy);
+  color: var(--turquoise-dark);
 }
 
 input,
@@ -53,7 +72,7 @@ select {
 .brand {
   margin: 0 0 0.25rem;
   font-weight: 600;
-  color: var(--turquoise);
+  color: var(--navy);
   letter-spacing: 0.02em;
 }
 
