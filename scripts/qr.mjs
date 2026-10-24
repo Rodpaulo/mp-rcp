@@ -11,7 +11,7 @@ const OUT_DIR = new URL('../materials/', import.meta.url)
 const options = {
   errorCorrectionLevel: 'M',
   margin: 4,
-  color: { dark: '#2E3D4D', light: '#FFFFFF' },
+  color: { dark: '#2C3E50', light: '#FFFFFF' },
 }
 
 await mkdir(OUT_DIR, { recursive: true })

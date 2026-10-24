@@ -17,3 +17,6 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 .DS_Store
+
+# Configuração local do Claude Code
+.claude/
