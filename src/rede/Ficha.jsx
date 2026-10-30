@@ -11,6 +11,7 @@ import {
   obterPessoa,
 } from './api.js'
 import { CANAIS, DECISOES, ESTADOS, ETIQUETAS, TIPOS, rotulo } from './listas.js'
+import AccaoAberta from './AccaoAberta.jsx'
 import Participacoes from './Participacoes.jsx'
 
 function plural(n, singular, plural) {
@@ -50,6 +51,26 @@ export default function Ficha({ id, onLista, onAbrir, onModo, onApagado }) {
   const [erro, setErro] = useState(false)
   const [erroApagar, setErroApagar] = useState(false)
   const [aApagar, setAApagar] = useState(false)
+  const [copia, setCopia] = useState('') // '' | 'feita' | 'falhou'
+
+  // Endereço desta ficha com o domínio actual, para colar na descrição do cartão do Trello.
+  const enderecoFicha = `${window.location.origin}/admin?s=rede&c=${id}`
+
+  // Depois de concluir uma acção ou mudar o cartão: só as revisões mudaram.
+  async function recarregarRevisoes() {
+    const revisoes = await listarRevisoes(id)
+    setDados((actuais) => ({ ...actuais, revisoes }))
+  }
+
+  async function handleCopiar() {
+    try {
+      await navigator.clipboard.writeText(enderecoFicha)
+      setCopia('feita')
+    } catch (error) {
+      console.error('copiar endereço falhou:', error)
+      setCopia('falhou')
+    }
+  }
 
   useEffect(() => {
     let activo = true
@@ -226,7 +247,20 @@ export default function Ficha({ id, onLista, onAbrir, onModo, onApagado }) {
           <button type="button" className="admin-button-secondary" onClick={() => onModo('editar')}>
             Editar
           </button>
+          <button type="button" className="admin-button-secondary" onClick={handleCopiar}>
+            Copiar endereço da ficha
+          </button>
         </div>
+        {copia === 'feita' && (
+          <p className="rede-aviso" role="status">
+            Endereço copiado. Cola-o na descrição do cartão do Trello.
+          </p>
+        )}
+        {copia === 'falhou' && (
+          <p className="rede-aviso" role="status">
+            Não foi possível copiar. Copia à mão: <span className="rede-endereco">{enderecoFicha}</span>
+          </p>
+        )}
       </section>
 
       <section className="admin-section">
@@ -260,6 +294,7 @@ export default function Ficha({ id, onLista, onAbrir, onModo, onApagado }) {
                       {item.concluida ? `Concluída a ${formatDate(item.concluida_em)}.` : 'Por concluir.'}
                     </p>
                   )}
+                  {item.accao && !item.concluida && <AccaoAberta revisao={item} onMudou={recarregarRevisoes} />}
                   {nomePerfil(item.registado_por) && (
                     <p className="rede-historico-pe">Registado por {nomePerfil(item.registado_por)}</p>
                   )}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { LOAD_ERROR, SAVE_ERROR, formatDate } from '../admin/text.js'
 import { concluirAccao, listarAccoesEmAtraso } from './api.js'
+import { perguntaConcluir } from './accoes.js'
 import { hoje } from './datas.js'
 
 // Acções com prazo passado e não concluídas (vista rede_accoes_em_atraso), com "Concluir" na própria linha.
@@ -23,7 +24,7 @@ export default function AccoesEmAtraso({ onAbrir }) {
   }, [carregar])
 
   async function handleConcluir(accao) {
-    if (!window.confirm(`Marcar como concluída: «${accao.accao}»?`)) return
+    if (!window.confirm(perguntaConcluir(accao))) return
     setAConcluir(accao.id)
     setErro('')
     try {
@@ -63,6 +64,13 @@ export default function AccoesEmAtraso({ onAbrir }) {
                   {accao.responsavel_nome && ` · a cargo de ${accao.responsavel_nome}`}
                   {` · revisão de ${formatDate(accao.data)}`}
                 </p>
+                {accao.cartao_trello && (
+                  <p className="rede-historico-pe">
+                    <a href={accao.cartao_trello} target="_blank" rel="noreferrer">
+                      Abrir cartão
+                    </a>
+                  </p>
+                )}
                 <button
                   type="button"
                   className="admin-button rede-botao-lista"

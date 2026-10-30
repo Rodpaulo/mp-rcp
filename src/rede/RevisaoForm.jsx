@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { LOAD_ERROR, SAVE_ERROR } from '../admin/text.js'
 import { actualizarContacto, criarRevisao, listarPerfis, obterContacto, obterUtilizadorId } from './api.js'
+import { erroCartao } from './accoes.js'
 import { hoje, somarMeses } from './datas.js'
-import { DECISOES, ESTADOS, ESTADO_POR_DECISAO, rotulo } from './listas.js'
+import { DECISOES, ESTADOS, ESTADO_POR_DECISAO, INICIO_CARTAO_TRELLO, rotulo } from './listas.js'
 
 const MESES_ATE_PROXIMA = 12
 
@@ -14,6 +15,7 @@ export default function RevisaoForm({ contactoId, onVoltar, onGravado }) {
   const [accao, setAccao] = useState('')
   const [prazo, setPrazo] = useState('')
   const [responsavel, setResponsavel] = useState('')
+  const [cartao, setCartao] = useState('')
   const [proxima, setProxima] = useState(somarMeses(hoje(), MESES_ATE_PROXIMA))
   const [proximaMexida, setProximaMexida] = useState(false)
   const [aGravar, setAGravar] = useState(false)
@@ -43,8 +45,13 @@ export default function RevisaoForm({ contactoId, onVoltar, onGravado }) {
   async function handleSubmit(event) {
     event.preventDefault()
     const textoAccao = accao.trim()
+    const enderecoCartao = textoAccao ? cartao.trim() : ''
     if (!decisao) {
       setErro('Escolhe a decisão.')
+      return
+    }
+    if (erroCartao(enderecoCartao)) {
+      setErro(erroCartao(enderecoCartao))
       return
     }
     setAGravar(true)
@@ -54,10 +61,11 @@ export default function RevisaoForm({ contactoId, onVoltar, onGravado }) {
         contacto_id: contactoId,
         data,
         decisao,
-        // Prazo e responsável só existem com acção (a base exige acção quando há prazo).
+        // Prazo, responsável e cartão só existem com acção (a base exige acção quando há prazo).
         accao: textoAccao || null,
         prazo: textoAccao && prazo ? prazo : null,
         responsavel: textoAccao && responsavel ? responsavel : null,
+        cartao_trello: enderecoCartao || null,
       })
     } catch (error) {
       console.error('gravar revisão falhou:', error)
@@ -149,6 +157,17 @@ export default function RevisaoForm({ contactoId, onVoltar, onGravado }) {
                 </option>
               ))}
             </select>
+          </label>
+          <label className="admin-field">
+            <span>Cartão Trello (opcional)</span>
+            <input
+              type="text"
+              inputMode="url"
+              autoComplete="off"
+              placeholder={`${INICIO_CARTAO_TRELLO}c/…`}
+              value={cartao}
+              onChange={(event) => setCartao(event.target.value)}
+            />
           </label>
         </>
       )}

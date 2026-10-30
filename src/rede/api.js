@@ -84,7 +84,7 @@ export async function listarRevisoes(contactoId) {
   return semErro(
     await supabase
       .from('revisoes')
-      .select('id, data, decisao, accao, prazo, responsavel, concluida, concluida_em, registado_por, created_at')
+      .select('id, data, decisao, accao, prazo, responsavel, concluida, concluida_em, cartao_trello, registado_por, created_at')
       .eq('contacto_id', contactoId),
   )
 }
@@ -95,6 +95,11 @@ export async function criarRevisao(dados) {
 
 export async function concluirAccao(revisaoId, data) {
   return semErro(await supabase.from('revisoes').update({ concluida: true, concluida_em: data }).eq('id', revisaoId))
+}
+
+// Acrescenta, corrige ou retira (null) o endereço do cartão do Trello de uma acção.
+export async function actualizarCartao(revisaoId, endereco) {
+  return semErro(await supabase.from('revisoes').update({ cartao_trello: endereco }).eq('id', revisaoId))
 }
 
 // ---------- vistas novas (só leitura) ----------
@@ -109,8 +114,24 @@ export async function listarPorRever() {
   )
 }
 
+// A vista não tem o cartão do Trello (a migração 005 só acrescentou a coluna à tabela):
+// lê-se à parte, de revisoes, para as acções da lista.
 export async function listarAccoesEmAtraso() {
-  return semErro(await supabase.from('rede_accoes_em_atraso').select('*').order('prazo').order('contacto_nome'))
+  const accoes = semErro(
+    await supabase.from('rede_accoes_em_atraso').select('*').order('prazo').order('contacto_nome'),
+  )
+  if (accoes.length === 0) return accoes
+  const cartoes = semErro(
+    await supabase
+      .from('revisoes')
+      .select('id, cartao_trello')
+      .in(
+        'id',
+        accoes.map((accao) => accao.id),
+      ),
+  )
+  const porId = new Map(cartoes.map((item) => [item.id, item.cartao_trello]))
+  return accoes.map((accao) => ({ ...accao, cartao_trello: porId.get(accao.id) ?? null }))
 }
 
 // ---------- participacoes (tabela nova: lê, escreve e apaga) ----------

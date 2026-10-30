@@ -50,6 +50,9 @@ export const ESTADO_POR_DECISAO = {
   encerrar: 'encerrada',
 }
 
+// O endereço de um cartão do Trello começa sempre assim (restrição check da migração 005).
+export const INICIO_CARTAO_TRELLO = 'https://trello.com/'
+
 export const PAPEIS = [
   { valor: 'orador', rotulo: 'Orador' },
   { valor: 'parceiro', rotulo: 'Parceiro' },

@@ -207,6 +207,20 @@
   cursor: pointer;
 }
 
+.rede-accao-aberta {
+  margin: 0.5rem 0;
+}
+
+.rede-accao-aberta .rede-accoes {
+  margin-top: 0.5rem;
+}
+
+/* Endereço longo da ficha, para copiar à mão quando a cópia automática falha. */
+.rede-endereco {
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
 .rede-dados {
   display: grid;
   grid-template-columns: auto 1fr;
