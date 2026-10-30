@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
-import { LOAD_ERROR, formatDate } from '../admin/text.js'
+import { LOAD_ERROR } from '../admin/text.js'
+import { porExtenso } from './datas.js'
 import {
   apagarContacto,
   contarParticipacoes,
+  listarEdicoesComCheckin,
   listarInteraccoes,
   listarMembros,
   listarPerfis,
@@ -38,12 +40,13 @@ async function carregarFicha(id) {
     listarRevisoes(id),
   ])
   if (!contacto) return null
-  const [organizacao, membros, pessoa] = await Promise.all([
+  const [organizacao, membros, pessoa, presencas] = await Promise.all([
     contacto.organizacao_id ? obterContacto(contacto.organizacao_id) : null,
     contacto.tipo_registo === 'organizacao' ? listarMembros(id) : [],
     contacto.person_id ? obterPessoa(contacto.person_id) : null,
+    contacto.person_id ? listarEdicoesComCheckin(contacto.person_id) : [],
   ])
-  return { contacto, perfis, interaccoes, revisoes, organizacao, membros, pessoa }
+  return { contacto, perfis, interaccoes, revisoes, organizacao, membros, pessoa, presencas }
 }
 
 export default function Ficha({ id, onLista, onAbrir, onModo, onApagado }) {
@@ -137,7 +140,7 @@ export default function Ficha({ id, onLista, onAbrir, onModo, onApagado }) {
 
   if (dados === undefined) return <p>A carregar…</p>
 
-  const { contacto, perfis, interaccoes, revisoes, organizacao, membros, pessoa } = dados
+  const { contacto, perfis, interaccoes, revisoes, organizacao, membros, pessoa, presencas } = dados
   const nomePerfil = (perfilId) => perfis.find((perfil) => perfil.id === perfilId)?.nome
   const linhaDoTempo = historico(interaccoes, revisoes)
 
@@ -173,7 +176,7 @@ export default function Ficha({ id, onLista, onAbrir, onModo, onApagado }) {
 
         <dl className="rede-dados">
           <dt>Próxima revisão</dt>
-          <dd>{contacto.proxima_revisao ? formatDate(contacto.proxima_revisao) : 'por marcar'}</dd>
+          <dd>{contacto.proxima_revisao ? porExtenso(contacto.proxima_revisao) : 'por marcar'}</dd>
           {contacto.email && (
             <>
               <dt>Email</dt>
@@ -209,13 +212,16 @@ export default function Ficha({ id, onLista, onAbrir, onModo, onApagado }) {
           {contacto.pedido_adesao_em && (
             <>
               <dt>Pedido de adesão</dt>
-              <dd>{formatDate(contacto.pedido_adesao_em)}</dd>
+              <dd>{porExtenso(contacto.pedido_adesao_em)}</dd>
             </>
           )}
           {pessoa && (
             <>
               <dt>Registo do RCP</dt>
-              <dd>{pessoa.email}</dd>
+              <dd>
+                {pessoa.email}
+                {presencas.length > 0 && ` · esteve no ${presencas.join(', ')}`}
+              </dd>
             </>
           )}
         </dl>
@@ -273,7 +279,7 @@ export default function Ficha({ id, onLista, onAbrir, onModo, onApagado }) {
               item.tipo === 'interaccao' ? (
                 <li key={`i-${item.id}`}>
                   <p className="rede-historico-cabeca">
-                    {formatDate(item.data)} · {rotulo(CANAIS, item.canal)}
+                    {porExtenso(item.data)} · {rotulo(CANAIS, item.canal)}
                   </p>
                   <p className="rede-texto">{item.resumo}</p>
                   {nomePerfil(item.registado_por) && (
@@ -283,15 +289,15 @@ export default function Ficha({ id, onLista, onAbrir, onModo, onApagado }) {
               ) : (
                 <li key={`r-${item.id}`} className="rede-historico-revisao">
                   <p className="rede-historico-cabeca">
-                    {formatDate(item.data)} · Revisão: {rotulo(DECISOES, item.decisao)}
+                    {porExtenso(item.data)} · Revisão: {rotulo(DECISOES, item.decisao)}
                   </p>
                   {item.accao && (
                     <p className="rede-texto">
                       Acção seguinte: {item.accao}
-                      {item.prazo && ` (até ${formatDate(item.prazo)})`}
+                      {item.prazo && ` (até ${porExtenso(item.prazo)})`}
                       {nomePerfil(item.responsavel) && `, a cargo de ${nomePerfil(item.responsavel)}`}
                       {'. '}
-                      {item.concluida ? `Concluída a ${formatDate(item.concluida_em)}.` : 'Por concluir.'}
+                      {item.concluida ? `Concluída a ${porExtenso(item.concluida_em)}.` : 'Por concluir.'}
                     </p>
                   )}
                   {item.accao && !item.concluida && <AccaoAberta revisao={item} onMudou={recarregarRevisoes} />}

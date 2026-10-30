@@ -181,3 +181,16 @@ export async function procurarPessoaPorEmail(email) {
 export async function obterPessoa(id) {
   return semErro(await supabase.from('people').select('id, email, name').eq('id', id).maybeSingle())
 }
+
+// ---------- checkins (tabela existente: só leitura) ----------
+
+// Códigos das edições em que a pessoa fez check-in, da mais antiga para a mais recente ("RCP05", "RCP06").
+export async function listarEdicoesComCheckin(personId) {
+  const linhas = semErro(
+    await supabase.from('checkins').select('editions(code, event_date)').eq('person_id', personId),
+  )
+  return linhas
+    .map((linha) => linha.editions)
+    .sort((a, b) => a.event_date.localeCompare(b.event_date))
+    .map((edicao) => edicao.code)
+}

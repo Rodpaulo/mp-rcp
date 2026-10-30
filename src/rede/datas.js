@@ -11,6 +11,28 @@ export function hoje() {
   return paraIso(new Date())
 }
 
+// Manual da marca: o mês leva maiúscula ("30 de Outubro de 2026"). Lista fixa, para não depender
+// da língua do browser (o pt-PT do browser escreve o mês em minúscula).
+const MESES = [
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
+]
+
+export function porExtenso(isoDate) {
+  const [ano, mes, dia] = isoDate.split('-').map(Number)
+  return `${dia} de ${MESES[mes - 1]} de ${ano}`
+}
+
 // 29 de Fevereiro + 12 meses dá 28 de Fevereiro, não 1 de Março.
 export function somarMeses(isoDate, meses) {
   const [ano, mes, dia] = isoDate.split('-').map(Number)

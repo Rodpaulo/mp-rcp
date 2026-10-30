@@ -230,7 +230,7 @@ Um CRM leve, dentro do admin, para a relação da Matinés Pensantes com oradore
 
 ### 14.3 Âmbito fechado desta versão
 - **Lista de contactos**: uma só lista, pessoas e organizações juntas, pesquisável por nome, com filtro por etiqueta e por estado.
-- **Ficha do contacto**: dados, organização a que pertence (ou pessoas que lhe pertencem), etiquetas, estado, próxima revisão; interacções e revisões em ordem cronológica; participações nas edições.
+- **Ficha do contacto**: dados, organização a que pertence (ou pessoas que lhe pertencem), etiquetas, estado, próxima revisão; interacções e revisões em ordem cronológica; participações nas edições. Num contacto ligado a `people`, a linha "Registo do RCP" mostra o email e as edições em que a pessoa fez check-in ("email · esteve no RCP05, RCP06").
 - **Registo de interacção**: pensado para telemóvel, com uma mão: data (hoje por omissão), canal, resumo. Três campos e um botão.
 - **Revisões**: data, decisão, acção seguinte com prazo e responsável, conclusão. Ao gravar uma revisão, a próxima revisão do contacto passa por omissão para 12 meses depois, editável.
 - **Participações**: ligação de um contacto a uma edição do RCP, com papel e notas.
@@ -288,10 +288,10 @@ Regras:
 ### 14.7 Regras de construção
 - **Migração 004 estritamente aditiva**: só cria tabelas, índices, políticas e vistas novas (mais o que estas exigem: activar RLS nas tabelas novas e criar as linhas de `perfis`). Nenhuma alteração, remoção, substituição ou permissão sobre objectos existentes: `people`, `editions`, `registrations`, `checkins`, `books`, `book_movements`, `edition_summary`, `biblioteca_resumo`, as funções e as políticas actuais.
 - A migração é aplicada pelo Miguel no SQL Editor, depois de a ler e de exportar as tabelas actuais em CSV. Não há base de teste: o ramo `rede` trabalha contra a base de produção.
-- O código do Rede nunca escreve em tabelas existentes. Lê `editions` (para as participações) e `people` (para a ligação por email), e mais nada.
+- O código do Rede nunca escreve em tabelas existentes. Lê `editions` (para as participações), `people` (para a ligação por email) e `checkins` (para mostrar, na ficha de um contacto ligado, as edições em que a pessoa fez check-in), só em leitura, e mais nada.
 - Rotas: o `vercel.json` não muda. O admin ganha separadores dentro de `/admin` (`?s=rede`); o módulo Rede carrega com `React.lazy`, para não pesar na página pública. A leitura automática a cada 15 s do painel não se aplica ao Rede.
 - `Admin.jsx` e `Panel.jsx` podem mudar no ramo `rede`. O ramo pode ser enviado para o GitHub para ter pré-visualização na Vercel. `main` recebeu o Rede a 30 de Outubro de 2026 e ficou fechado até 4 de Novembro; o trabalho seguinte vive no ramo `rede` até lá.
-- Sem dependências novas. Interface em português europeu, tratamento por tu.
+- Sem dependências novas. Interface em português europeu, tratamento por tu. Datas por extenso como no manual da marca, com o mês em maiúscula ("30 de Outubro de 2026").
 
 ### 14.8 Fases seguintes
 - **Associados**, quando a ASBL existir: o pedido de adesão já tem campo (`pedido_adesao_em`); quotas, estado de associado e ligação ao Tally ficam para essa fase, com secção própria neste SPEC.

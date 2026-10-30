@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { LOAD_ERROR, SAVE_ERROR, formatDate } from '../admin/text.js'
+import { LOAD_ERROR, SAVE_ERROR } from '../admin/text.js'
+import { porExtenso } from './datas.js'
 import { apagarParticipacao, criarParticipacao, listarEdicoes, listarParticipacoes } from './api.js'
 import { PAPEIS, rotulo } from './listas.js'
 
@@ -100,7 +101,7 @@ export default function Participacoes({ contactoId }) {
                 <p className="rede-historico-cabeca">
                   {nomeEdicao(item.editions)} · {rotulo(PAPEIS, item.papel)}
                 </p>
-                <p className="rede-historico-pe">{formatDate(item.editions.event_date)}</p>
+                <p className="rede-historico-pe">{porExtenso(item.editions.event_date)}</p>
                 {item.notas && <p className="rede-texto">{item.notas}</p>}
                 <button type="button" className="rede-ligacao-texto" onClick={() => handleRetirar(item)}>
                   Retirar

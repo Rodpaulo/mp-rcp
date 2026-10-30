@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { LOAD_ERROR, formatDate } from '../admin/text.js'
+import { LOAD_ERROR } from '../admin/text.js'
+import { porExtenso } from './datas.js'
 import { listarPorRever } from './api.js'
 import { ESTADOS, rotulo } from './listas.js'
 
@@ -38,9 +39,9 @@ export default function PorRever({ onAbrir, onRever }) {
                 </p>
                 <p className="rede-historico-pe">
                   {contacto.proxima_revisao
-                    ? `Revisão prevista para ${formatDate(contacto.proxima_revisao)}`
+                    ? `Revisão prevista para ${porExtenso(contacto.proxima_revisao)}`
                     : 'Revisão por marcar'}
-                  {contacto.ultima_revisao && ` · última a ${formatDate(contacto.ultima_revisao)}`}
+                  {contacto.ultima_revisao && ` · última a ${porExtenso(contacto.ultima_revisao)}`}
                 </p>
                 <button type="button" className="admin-button-secondary rede-botao-lista" onClick={() => onRever(contacto.id)}>
                   Registar revisão
