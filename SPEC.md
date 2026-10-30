@@ -219,3 +219,72 @@ Depois: fotografia da mesa no fim; na reconciliação, conferir os números das 
 
 ### 13.10 Depois do RCP06
 Secção Biblioteca no admin (catálogo, movimentos por edição, correcções, `desaparecido`); eventual leitura de ISBN pela câmara se o volume justificar; percurso de cada livro como conteúdo de newsletter quando houver meses de história.
+
+## 14. Rede (acrescentado a 30 de Outubro de 2026)
+
+### 14.1 Desvio de âmbito, registado
+A secção 12 fecha a v2 numa lista curta. A 30 de Outubro o Miguel decidiu acrescentar à mesma aplicação um módulo Rede, fora dessa lista, com quatro condições: o SPEC primeiro, depois a migração, depois o código; trabalho só no ramo `rede` até 4 de Novembro; migração estritamente aditiva, aplicada pelo Miguel; nada do que está em produção para o RCP06 muda. A transferência para contas da associação (secção 12) e a revisão do texto de privacidade são tarefas separadas, depois do RCP06, e não bloqueiam o Rede.
+
+### 14.2 Finalidade
+Um CRM leve, dentro do admin, para a relação da Matinés Pensantes com oradores, parceiros, instituições, media, patrocinadores, locais, organizadores terceiros e, mais tarde, associados. Responde a quatro perguntas: quem conhecemos, o que falámos com cada um, o que decidimos fazer a seguir, e em que edições do RCP participou. Usam-no o Miguel e a Ana, com tudo visível para os dois.
+
+### 14.3 Âmbito fechado desta versão
+- **Lista de contactos**: uma só lista, pessoas e organizações juntas, pesquisável por nome, com filtro por etiqueta e por estado.
+- **Ficha do contacto**: dados, organização a que pertence (ou pessoas que lhe pertencem), etiquetas, estado, próxima revisão; interacções e revisões em ordem cronológica; participações nas edições.
+- **Registo de interacção**: pensado para telemóvel, com uma mão: data (hoje por omissão), canal, resumo. Três campos e um botão.
+- **Revisões**: data, decisão, acção seguinte com prazo e responsável, conclusão. Ao gravar uma revisão, a próxima revisão do contacto passa por omissão para 12 meses depois, editável.
+- **Participações**: ligação de um contacto a uma edição do RCP, com papel e notas.
+- **Vista "Por rever"**: contactos com a próxima revisão vencida ou por marcar.
+- **Vista "Acções em atraso"**: acções com prazo passado e não concluídas.
+
+### 14.4 Fora do âmbito
+Pipeline visual (colunas, arrastar e largar); envio de email a partir da aplicação; pontuações ou classificações automáticas de contactos; gestão de quotas e pagamentos; importação automática de contactos; papéis e permissões diferentes entre o Miguel e a Ana.
+
+### 14.5 Modelo de dados (migração 004)
+```
+perfis          id (= auth.users.id), nome, created_at
+contactos       id, tipo_registo ('pessoa' | 'organizacao'), nome,
+                organizacao_id (outro contacto, opcional), person_id (people, opcional),
+                etiquetas text[] ('orador', 'parceiro', 'instituicao', 'media', 'patrocinador',
+                                  'local', 'organizador_terceiro', 'associado'),
+                estado ('activa' | 'prospecto' | 'a_avaliar' | 'em_espera' | 'encerrada'),
+                email, telefone, cidade, website, origem, notas,
+                pedido_adesao_em (date, só com a etiqueta 'associado'), proxima_revisao (date),
+                created_at, updated_at, criado_por (perfis)
+interaccoes     id, contacto_id, data (hoje por omissão),
+                canal ('email' | 'chamada' | 'presencial' | 'whatsapp' | 'evento' | 'outro'),
+                resumo, registado_por (perfis), created_at
+revisoes        id, contacto_id, data, decisao ('abordar' | 'manter' | 'reforcar' | 'em_espera' | 'encerrar'),
+                accao, prazo, responsavel (perfis), concluida, concluida_em,
+                registado_por (perfis), created_at
+participacoes   contacto_id + edition_id (chave),
+                papel ('orador' | 'parceiro' | 'patrocinador' | 'media' | 'local' | 'apoio'),
+                notas, created_at
+vistas          rede_por_rever, rede_accoes_em_atraso (security_invoker)
+```
+Regras:
+- Um contacto é uma pessoa ou uma organização. Uma pessoa pode pertencer a uma organização (`organizacao_id`); a aplicação só oferece organizações nesse campo.
+- O email de um contacto não é único (as organizações usam endereços genéricos). `person_id` liga o contacto à tabela `people` do check-in só quando o email coincide, e só então; a aplicação procura em `people` pelo email e propõe a ligação. A tabela `people` nunca é alterada pelo Rede.
+- `perfis` tem uma linha por conta da direcção; a migração cria-as a partir das contas existentes. `criado_por` e `registado_por` ficam por omissão com a conta autenticada (`auth.uid()`). Uma conta nova no Supabase Auth precisa da sua linha em `perfis` antes de registar no Rede.
+- Listas fechadas por restrição `check` na base de dados; a etiqueta e o papel aceitam só os valores acima.
+- Uma revisão com prazo tem de ter acção; `concluida_em` existe se e só se `concluida` for verdadeiro.
+- Uma participação por contacto e edição.
+- `updated_at` é actualizado pela aplicação ao gravar (sem triggers na base).
+- Apagar um contacto apaga as suas interacções, revisões e participações. As ligações às tabelas existentes nunca impedem uma operação actual: apagar uma pessoa em `people` limpa `person_id`; apagar uma edição apaga as participações.
+- "Por rever": contactos não encerrados com `proxima_revisao` nula ou até hoje. "Acções em atraso": revisões não concluídas com `prazo` anterior a hoje.
+
+### 14.6 Segurança e acesso
+- Mesmas políticas das tabelas actuais: acesso total para `authenticated`, nenhum para `anon`. Sem funções públicas: o Rede não aparece nas páginas `/` nem `/biblioteca`.
+- Sem papéis: o Miguel e a Ana vêem e alteram tudo.
+
+### 14.7 Regras de construção
+- **Migração 004 estritamente aditiva**: só cria tabelas, índices, políticas e vistas novas (mais o que estas exigem: activar RLS nas tabelas novas e criar as linhas de `perfis`). Nenhuma alteração, remoção, substituição ou permissão sobre objectos existentes: `people`, `editions`, `registrations`, `checkins`, `books`, `book_movements`, `edition_summary`, `biblioteca_resumo`, as funções e as políticas actuais.
+- A migração é aplicada pelo Miguel no SQL Editor, depois de a ler e de exportar as tabelas actuais em CSV. Não há base de teste: o ramo `rede` trabalha contra a base de produção.
+- O código do Rede nunca escreve em tabelas existentes. Lê `editions` (para as participações) e `people` (para a ligação por email), e mais nada.
+- Rotas: o `vercel.json` não muda. O admin ganha separadores dentro de `/admin` (`?s=rede`); o módulo Rede carrega com `React.lazy`, para não pesar na página pública. A leitura automática a cada 15 s do painel não se aplica ao Rede.
+- `Admin.jsx` e `Panel.jsx` podem mudar no ramo `rede`. O ramo pode ser enviado para o GitHub para ter pré-visualização na Vercel; `main` e a Vercel Production não se tocam antes de 4 de Novembro.
+- Sem dependências novas. Interface em português europeu, tratamento por tu.
+
+### 14.8 Fases seguintes
+- **Associados**, quando a ASBL existir: o pedido de adesão já tem campo (`pedido_adesao_em`); quotas, estado de associado e ligação ao Tally ficam para essa fase, com secção própria neste SPEC.
+- Transferência para contas da associação e revisão do texto de privacidade (dados de contactos externos), depois do RCP06.
