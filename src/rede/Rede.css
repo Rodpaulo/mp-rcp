@@ -207,6 +207,10 @@
   cursor: pointer;
 }
 
+.rede-cartao {
+  margin: 0 0 0.75rem;
+}
+
 .rede-accao-aberta {
   margin: 0.5rem 0;
 }

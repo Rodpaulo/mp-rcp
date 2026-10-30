@@ -240,13 +240,14 @@ Um CRM leve, dentro do admin, para a relação da Matinés Pensantes com oradore
 - **Apagar um contacto**: na ficha, com confirmação explícita; a base apaga por cascata as interacções, revisões e participações do contacto (ver 14.5), sem código adicional.
 - **Vista "Por rever"**: contactos com a próxima revisão vencida ou por marcar.
 - **Vista "Acções em atraso"**: acções com prazo passado e não concluídas, cada uma com "Concluir".
-- **Acções abertas na ficha**: cada acção por concluir tem "Concluir" (a mesma confirmação da vista "Acções em atraso", com o lembrete "Arquiva o cartão no Trello" quando há cartão) e "Editar cartão" (acrescentar ou corrigir o endereço do cartão do Trello, com a mesma validação do formulário de revisão).
+- **Acções abertas na ficha**: cada acção por concluir tem "Concluir" (a mesma confirmação da vista "Acções em atraso") e, quando o contacto tem cartão no Trello, "Abrir cartão".
+- **Cartão do Trello na ficha**: no cabeçalho do contacto, "Abrir cartão" (quando há endereço) e "Editar cartão" (acrescentar, corrigir ou retirar o endereço, que tem de começar por `https://trello.com/`).
 - **Vista "Interessados"** (30 de Outubro de 2026): as pessoas de `people` que marcaram, na página de entrada, *Quero ser associado*, com nome, email e data do pedido, e se já há um contacto ligado (`person_id`). "Criar contacto" cria em `contactos` uma pessoa com o nome (ou, sem nome, o email), o email, a etiqueta `associado`, `pedido_adesao_em` igual ao dia do pedido, `person_id` ligado e estado `a_avaliar`; com contacto ligado, o botão passa a "Abrir contacto".
 
 ### 14.4 Fora do âmbito
 Pipeline visual (colunas, arrastar e largar); envio de email a partir da aplicação; pontuações ou classificações automáticas de contactos; gestão de quotas e pagamentos; importação automática de contactos; papéis e permissões diferentes entre o Miguel e a Ana.
 
-### 14.5 Modelo de dados (migrações 004 e 005)
+### 14.5 Modelo de dados (migrações 004, 005 e 007)
 ```
 perfis          id (= auth.users.id), nome, created_at
 contactos       id, tipo_registo ('pessoa' | 'organizacao'), nome,
@@ -256,13 +257,14 @@ contactos       id, tipo_registo ('pessoa' | 'organizacao'), nome,
                 estado ('activa' | 'prospecto' | 'a_avaliar' | 'em_espera' | 'encerrada'),
                 email, telefone, cidade, website, origem, notas,
                 pedido_adesao_em (date, só com a etiqueta 'associado'), proxima_revisao (date),
+                cartao_trello (endereço https://trello.com/…, opcional; migração 007),
                 created_at, updated_at, criado_por (perfis)
 interaccoes     id, contacto_id, data (hoje por omissão),
                 canal ('email' | 'chamada' | 'presencial' | 'whatsapp' | 'evento' | 'outro'),
                 resumo, registado_por (perfis), created_at
 revisoes        id, contacto_id, data, decisao ('abordar' | 'manter' | 'reforcar' | 'em_espera' | 'encerrar'),
                 accao, prazo, responsavel (perfis), concluida, concluida_em,
-                cartao_trello (endereço https://trello.com/…, opcional; migração 005),
+                cartao_trello (migração 005; sem uso desde a 007, mantém-se por agora),
                 registado_por (perfis), created_at
 participacoes   contacto_id + edition_id (chave),
                 papel ('orador' | 'parceiro' | 'patrocinador' | 'media' | 'local' | 'apoio'),
@@ -281,10 +283,12 @@ Regras:
 - Apagar um contacto apaga as suas interacções, revisões e participações. As ligações às tabelas existentes nunca impedem uma operação actual: apagar uma pessoa em `people` limpa `person_id`; apagar uma edição apaga as participações.
 - "Por rever": contactos não encerrados com `proxima_revisao` nula ou até hoje. "Acções em atraso": revisões não concluídas com `prazo` anterior a hoje.
 - "Interessados": pessoas com `people.associado_interesse` verdadeiro, a mais recente primeiro. O Rede só lê `people`; "Criar contacto" escreve só em `contactos`.
-- **Trello.** Cada facto vive num só sítio. No Rede: contactos, interacções, revisões, decisões, estado, participações. No Trello (quadro "Rede"): a acção seguinte, o prazo e o responsável, e mais nada.
-  - O cartão existe só enquanto a acção está aberta: nasce quando uma revisão grava uma acção com prazo, arquiva-se quando a acção é concluída. Um contacto sem acção aberta não tem cartão.
-  - Ligação à mão nos dois sentidos: a descrição do cartão tem o endereço da ficha (botão "Copiar endereço da ficha"); a acção no Rede tem o endereço do cartão (`revisoes.cartao_trello`, que começa sempre por `https://trello.com/`).
-  - Na ficha e em "Acções em atraso", cada acção aberta com endereço mostra "Abrir cartão". Ao concluir uma acção com cartão, a confirmação lembra "Arquiva o cartão no Trello".
+- **Trello** (reescrita a 30 de Outubro de 2026, migração 007). O Rede guarda os factos: interacções, revisões, decisões, estado, participações. O cartão do Trello (quadro "Rede") guarda ideias e contexto: o que propor, o que explorar, quem é quem; é alimentado nas conversas com o Claude.
+  - Um cartão por contacto, permanente, com o nome exacto do contacto. Vive enquanto o contacto não estiver `encerrada`.
+  - Prazo e responsável ficam só no Rede, nunca no cartão.
+  - Ligação à mão nos dois sentidos: a descrição do cartão tem o endereço da ficha (botão "Copiar endereço da ficha"); o contacto tem o endereço do cartão (`contactos.cartao_trello`, que começa sempre por `https://trello.com/`).
+  - Na ficha, "Abrir cartão" e "Editar cartão" ficam no cabeçalho do contacto. As acções abertas, na ficha e em "Acções em atraso", mostram "Abrir cartão" com o cartão do contacto. Concluir uma acção não mexe no cartão.
+  - `revisoes.cartao_trello` (migração 005) mantém-se na base, mas a aplicação já não a lê nem a escreve.
 
 ### 14.6 Segurança e acesso
 - Mesmas políticas das tabelas actuais: acesso total para `authenticated`, nenhum para `anon`. Sem funções públicas: o Rede não aparece nas páginas `/` nem `/biblioteca`.
@@ -301,4 +305,4 @@ Regras:
 ### 14.8 Fases seguintes
 - **Associados**, quando a ASBL existir: o pedido de adesão já tem campo (`pedido_adesao_em`); quotas, estado de associado e ligação ao Tally ficam para essa fase, com secção própria neste SPEC.
 - Transferência para contas da associação e revisão do texto de privacidade (dados de contactos externos), depois do RCP06.
-- **Trello automático**: criação e arquivo dos cartões pela API do Trello. Não agora; até lá, a ligação faz-se à mão (§14.5).
+- **Trello automático**: pela API do Trello, criar o cartão de cada contacto e arquivá-lo quando o contacto passa a `encerrada`. Não agora; até lá, a ligação faz-se à mão (§14.5).

@@ -1,10 +1,10 @@
-// Regras das acções abertas, iguais na ficha, na vista "Acções em atraso" e no formulário de revisão.
+// Regras partilhadas: a confirmação de "Concluir" (na ficha e em "Acções em atraso")
+// e a validação do endereço do cartão do Trello do contacto.
 import { INICIO_CARTAO_TRELLO } from './listas.js'
 
-// Texto da confirmação de "Concluir". O cartão só vive enquanto a acção está aberta (SPEC 14.5).
+// Concluir uma acção não mexe no cartão do contacto, que é permanente (SPEC 14.5).
 export function perguntaConcluir(accao) {
-  const pergunta = `Marcar como concluída: «${accao.accao}»?`
-  return accao.cartao_trello ? `${pergunta}\n\nArquiva o cartão no Trello.` : pergunta
+  return `Marcar como concluída: «${accao.accao}»?`
 }
 
 // Devolve a mensagem de erro, ou '' se o endereço serve (vazio também serve: o cartão é opcional).

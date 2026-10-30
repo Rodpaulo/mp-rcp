@@ -14,6 +14,7 @@ import {
 } from './api.js'
 import { CANAIS, DECISOES, ESTADOS, ETIQUETAS, TIPOS, rotulo } from './listas.js'
 import AccaoAberta from './AccaoAberta.jsx'
+import CartaoContacto from './CartaoContacto.jsx'
 import Participacoes from './Participacoes.jsx'
 
 function plural(n, singular, plural) {
@@ -63,6 +64,11 @@ export default function Ficha({ id, onLista, onAbrir, onModo, onApagado }) {
   async function recarregarRevisoes() {
     const revisoes = await listarRevisoes(id)
     setDados((actuais) => ({ ...actuais, revisoes }))
+  }
+
+  // Depois de gravar o cartão: só esse campo do contacto mudou.
+  function mudarCartao(cartao) {
+    setDados((actuais) => ({ ...actuais, contacto: { ...actuais.contacto, cartao_trello: cartao } }))
   }
 
   async function handleCopiar() {
@@ -164,6 +170,8 @@ export default function Ficha({ id, onLista, onAbrir, onModo, onApagado }) {
           )}
           {contacto.cidade && ` · ${contacto.cidade}`}
         </p>
+
+        <CartaoContacto contactoId={id} cartao={contacto.cartao_trello} onMudou={mudarCartao} />
 
         <p className="rede-etiquetas">
           <span className={`rede-estado rede-estado-${contacto.estado}`}>{rotulo(ESTADOS, contacto.estado)}</span>
@@ -300,7 +308,7 @@ export default function Ficha({ id, onLista, onAbrir, onModo, onApagado }) {
                       {item.concluida ? `Concluída a ${porExtenso(item.concluida_em)}.` : 'Por concluir.'}
                     </p>
                   )}
-                  {item.accao && !item.concluida && <AccaoAberta revisao={item} onMudou={recarregarRevisoes} />}
+                  {item.accao && !item.concluida && <AccaoAberta revisao={item} cartao={contacto.cartao_trello} onMudou={recarregarRevisoes} />}
                   {nomePerfil(item.registado_por) && (
                     <p className="rede-historico-pe">Registado por {nomePerfil(item.registado_por)}</p>
                   )}
