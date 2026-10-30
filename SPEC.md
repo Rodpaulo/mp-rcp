@@ -236,12 +236,13 @@ Um CRM leve, dentro do admin, para a relação da Matinés Pensantes com oradore
 - **Participações**: ligação de um contacto a uma edição do RCP, com papel e notas.
 - **Apagar um contacto**: na ficha, com confirmação explícita; a base apaga por cascata as interacções, revisões e participações do contacto (ver 14.5), sem código adicional.
 - **Vista "Por rever"**: contactos com a próxima revisão vencida ou por marcar.
-- **Vista "Acções em atraso"**: acções com prazo passado e não concluídas.
+- **Vista "Acções em atraso"**: acções com prazo passado e não concluídas, cada uma com "Concluir".
+- **Acções abertas na ficha**: cada acção por concluir tem "Concluir" (a mesma confirmação da vista "Acções em atraso", com o lembrete "Arquiva o cartão no Trello" quando há cartão) e "Editar cartão" (acrescentar ou corrigir o endereço do cartão do Trello, com a mesma validação do formulário de revisão).
 
 ### 14.4 Fora do âmbito
 Pipeline visual (colunas, arrastar e largar); envio de email a partir da aplicação; pontuações ou classificações automáticas de contactos; gestão de quotas e pagamentos; importação automática de contactos; papéis e permissões diferentes entre o Miguel e a Ana.
 
-### 14.5 Modelo de dados (migração 004)
+### 14.5 Modelo de dados (migrações 004 e 005)
 ```
 perfis          id (= auth.users.id), nome, created_at
 contactos       id, tipo_registo ('pessoa' | 'organizacao'), nome,
@@ -257,6 +258,7 @@ interaccoes     id, contacto_id, data (hoje por omissão),
                 resumo, registado_por (perfis), created_at
 revisoes        id, contacto_id, data, decisao ('abordar' | 'manter' | 'reforcar' | 'em_espera' | 'encerrar'),
                 accao, prazo, responsavel (perfis), concluida, concluida_em,
+                cartao_trello (endereço https://trello.com/…, opcional; migração 005),
                 registado_por (perfis), created_at
 participacoes   contacto_id + edition_id (chave),
                 papel ('orador' | 'parceiro' | 'patrocinador' | 'media' | 'local' | 'apoio'),
@@ -274,6 +276,10 @@ Regras:
 - `updated_at` é actualizado pela aplicação ao gravar (sem triggers na base).
 - Apagar um contacto apaga as suas interacções, revisões e participações. As ligações às tabelas existentes nunca impedem uma operação actual: apagar uma pessoa em `people` limpa `person_id`; apagar uma edição apaga as participações.
 - "Por rever": contactos não encerrados com `proxima_revisao` nula ou até hoje. "Acções em atraso": revisões não concluídas com `prazo` anterior a hoje.
+- **Trello.** Cada facto vive num só sítio. No Rede: contactos, interacções, revisões, decisões, estado, participações. No Trello (quadro "Rede"): a acção seguinte, o prazo e o responsável, e mais nada.
+  - O cartão existe só enquanto a acção está aberta: nasce quando uma revisão grava uma acção com prazo, arquiva-se quando a acção é concluída. Um contacto sem acção aberta não tem cartão.
+  - Ligação à mão nos dois sentidos: a descrição do cartão tem o endereço da ficha (botão "Copiar endereço da ficha"); a acção no Rede tem o endereço do cartão (`revisoes.cartao_trello`, que começa sempre por `https://trello.com/`).
+  - Na ficha e em "Acções em atraso", cada acção aberta com endereço mostra "Abrir cartão". Ao concluir uma acção com cartão, a confirmação lembra "Arquiva o cartão no Trello".
 
 ### 14.6 Segurança e acesso
 - Mesmas políticas das tabelas actuais: acesso total para `authenticated`, nenhum para `anon`. Sem funções públicas: o Rede não aparece nas páginas `/` nem `/biblioteca`.
@@ -284,9 +290,10 @@ Regras:
 - A migração é aplicada pelo Miguel no SQL Editor, depois de a ler e de exportar as tabelas actuais em CSV. Não há base de teste: o ramo `rede` trabalha contra a base de produção.
 - O código do Rede nunca escreve em tabelas existentes. Lê `editions` (para as participações) e `people` (para a ligação por email), e mais nada.
 - Rotas: o `vercel.json` não muda. O admin ganha separadores dentro de `/admin` (`?s=rede`); o módulo Rede carrega com `React.lazy`, para não pesar na página pública. A leitura automática a cada 15 s do painel não se aplica ao Rede.
-- `Admin.jsx` e `Panel.jsx` podem mudar no ramo `rede`. O ramo pode ser enviado para o GitHub para ter pré-visualização na Vercel; `main` e a Vercel Production não se tocam antes de 4 de Novembro.
+- `Admin.jsx` e `Panel.jsx` podem mudar no ramo `rede`. O ramo pode ser enviado para o GitHub para ter pré-visualização na Vercel. `main` recebeu o Rede a 30 de Outubro de 2026 e ficou fechado até 4 de Novembro; o trabalho seguinte vive no ramo `rede` até lá.
 - Sem dependências novas. Interface em português europeu, tratamento por tu.
 
 ### 14.8 Fases seguintes
 - **Associados**, quando a ASBL existir: o pedido de adesão já tem campo (`pedido_adesao_em`); quotas, estado de associado e ligação ao Tally ficam para essa fase, com secção própria neste SPEC.
 - Transferência para contas da associação e revisão do texto de privacidade (dados de contactos externos), depois do RCP06.
+- **Trello automático**: criação e arquivo dos cartões pela API do Trello. Não agora; até lá, a ligação faz-se à mão (§14.5).
