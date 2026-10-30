@@ -210,7 +210,8 @@ export default function CheckIn() {
           {showPrivacy && (
             <p id="checkin-privacy" className="checkin-privacy">
               A Matinés Pensantes (geral@matinespensantes.org) regista o teu email para saber quem
-              esteve presente nos seus encontros. Só te enviamos a newsletter se marcares a caixa. Os
+              esteve presente nos seus encontros. Só te enviamos a newsletter se marcares a caixa. Se marcares a
+              caixa de associado, guardamos esse pedido para te contactarmos sobre a adesão. Os
               dados ficam numa base de dados na União Europeia, enquanto a associação organizar o
               Regresso à Casa de Partida. Para consultar ou apagar os teus dados, escreve-nos para
               geral@matinespensantes.org.
