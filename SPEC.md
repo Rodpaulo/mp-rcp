@@ -291,7 +291,7 @@ Regras:
 - O código do Rede nunca escreve em tabelas existentes. Lê `editions` (para as participações), `people` (para a ligação por email) e `checkins` (para mostrar, na ficha de um contacto ligado, as edições em que a pessoa fez check-in), só em leitura, e mais nada.
 - Rotas: o `vercel.json` não muda. O admin ganha separadores dentro de `/admin` (`?s=rede`); o módulo Rede carrega com `React.lazy`, para não pesar na página pública. A leitura automática a cada 15 s do painel não se aplica ao Rede.
 - `Admin.jsx` e `Panel.jsx` podem mudar no ramo `rede`. O ramo pode ser enviado para o GitHub para ter pré-visualização na Vercel. `main` recebeu o Rede a 30 de Outubro de 2026 e ficou fechado até 4 de Novembro; o trabalho seguinte vive no ramo `rede` até lá.
-- Sem dependências novas. Interface em português europeu, tratamento por tu. Datas por extenso como no manual da marca, com o mês em maiúscula ("30 de Outubro de 2026").
+- Sem dependências novas. Interface em português europeu, tratamento por tu. Datas por extenso como no manual da marca, com o mês em maiúscula ("30 de Outubro de 2026"), em todo o admin: no Rede e também no separador RCP (painel e lista de edições), com uma só função (`formatDate`, em `src/admin/text.js`).
 
 ### 14.8 Fases seguintes
 - **Associados**, quando a ASBL existir: o pedido de adesão já tem campo (`pedido_adesao_em`); quotas, estado de associado e ligação ao Tally ficam para essa fase, com secção própria neste SPEC.

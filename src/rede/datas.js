@@ -11,27 +11,8 @@ export function hoje() {
   return paraIso(new Date())
 }
 
-// Manual da marca: o mês leva maiúscula ("30 de Outubro de 2026"). Lista fixa, para não depender
-// da língua do browser (o pt-PT do browser escreve o mês em minúscula).
-const MESES = [
-  'Janeiro',
-  'Fevereiro',
-  'Março',
-  'Abril',
-  'Maio',
-  'Junho',
-  'Julho',
-  'Agosto',
-  'Setembro',
-  'Outubro',
-  'Novembro',
-  'Dezembro',
-]
-
-export function porExtenso(isoDate) {
-  const [ano, mes, dia] = isoDate.split('-').map(Number)
-  return `${dia} de ${MESES[mes - 1]} de ${ano}`
-}
+// Data por extenso com o mês em maiúscula, como no manual da marca: a mesma regra do separador RCP.
+export { formatDate as porExtenso } from '../admin/text.js'
 
 // 29 de Fevereiro + 12 meses dá 28 de Fevereiro, não 1 de Março.
 export function somarMeses(isoDate, meses) {

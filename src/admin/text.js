@@ -1,14 +1,27 @@
 export const LOAD_ERROR = 'Não foi possível carregar. Tenta outra vez.'
 export const SAVE_ERROR = 'Não foi possível guardar. Tenta outra vez.'
 
-// event_date vem como 'AAAA-MM-DD'; construída em hora local para não mudar de dia.
+// Manual da marca: o mês leva maiúscula ("30 de Outubro de 2026"). Lista fixa, para não depender
+// da língua do browser (o pt-PT do browser escreve o mês em minúscula).
+const MONTHS = [
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
+]
+
+// event_date vem como 'AAAA-MM-DD'; lida como texto, para não mudar de dia com o fuso horário.
 export function formatDate(isoDate) {
   const [year, month, day] = isoDate.split('-').map(Number)
-  return new Date(year, month - 1, day).toLocaleDateString('pt-PT', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
+  return `${day} de ${MONTHS[month - 1]} de ${year}`
 }
 
 export function formatTime(timestamp) {
