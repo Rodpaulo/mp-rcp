@@ -77,6 +77,11 @@
   accent-color: var(--navy);
 }
 
+/* Duas caixas seguidas (newsletter e associado): o mesmo espaço entre elas que à volta. */
+.checkin-checkbox + .checkin-checkbox {
+  margin-top: 0;
+}
+
 .checkin-message {
   margin: 0 0 1rem;
   padding: 0.75rem;

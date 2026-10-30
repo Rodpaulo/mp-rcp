@@ -19,6 +19,7 @@ export default function CheckIn() {
   const [savedEmail, setSavedEmail] = useState(() => readKey(KEY_EMAIL))
   const [email, setEmail] = useState(() => readKey(KEY_EMAIL) ?? '')
   const [newsletter, setNewsletter] = useState(false)
+  const [associado, setAssociado] = useState(false)
   const [sending, setSending] = useState(false)
   const [message, setMessage] = useState('')
   const [confirmation, setConfirmation] = useState('')
@@ -67,9 +68,11 @@ export default function CheckIn() {
     setSending(true)
     setMessage('')
     try {
-      const { data, error } = await supabase.rpc('check_in', {
+      // check_in_associado faz o mesmo que check_in e marca o interesse em ser associado (migração 006).
+      const { data, error } = await supabase.rpc('check_in_associado', {
         p_email: normalized,
         p_newsletter: newsletter,
+        p_associado_interesse: associado,
       })
       if (error) throw error
 
@@ -165,6 +168,16 @@ export default function CheckIn() {
               disabled={sending}
             />
             <span>Quero receber a newsletter da Matinés Pensantes.</span>
+          </label>
+
+          <label className="checkin-checkbox">
+            <input
+              type="checkbox"
+              checked={associado}
+              onChange={(event) => setAssociado(event.target.checked)}
+              disabled={sending}
+            />
+            <span>Quero ser associado da Matinés Pensantes. Contactem-me.</span>
           </label>
 
           {message && (

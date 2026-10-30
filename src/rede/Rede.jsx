@@ -4,6 +4,7 @@ import Contactos from './Contactos.jsx'
 import ContactoForm from './ContactoForm.jsx'
 import Ficha from './Ficha.jsx'
 import InteraccaoForm from './InteraccaoForm.jsx'
+import Interessados from './Interessados.jsx'
 import PorRever from './PorRever.jsx'
 import RevisaoForm from './RevisaoForm.jsx'
 import './Rede.css'
@@ -12,6 +13,7 @@ const VISTAS = [
   { valor: '', rotulo: 'Contactos' },
   { valor: 'por-rever', rotulo: 'Por rever' },
   { valor: 'atraso', rotulo: 'Acções em atraso' },
+  { valor: 'interessados', rotulo: 'Interessados' },
 ]
 
 function Vistas({ actual }) {
@@ -35,6 +37,7 @@ function Vistas({ actual }) {
 //   ?s=rede                       lista de contactos
 //   ?s=rede&v=por-rever           vista "Por rever"
 //   ?s=rede&v=atraso              vista "Acções em atraso"
+//   ?s=rede&v=interessados        vista "Interessados" (quer ser associado)
 //   ?s=rede&c=novo                contacto novo
 //   ?s=rede&c=<id>                ficha do contacto
 //   ?s=rede&c=<id>&m=editar       editar contacto
@@ -110,6 +113,7 @@ export default function Rede() {
         <PorRever onAbrir={(id) => ficha(id)} onRever={(id) => irPara({ c: id, m: 'revisao' })} />
       )}
       {vista === 'atraso' && <AccoesEmAtraso onAbrir={(id) => ficha(id)} />}
+      {vista === 'interessados' && <Interessados onAbrir={(id) => ficha(id)} />}
       {vista === '' && <Contactos onAbrir={(id) => (id === 'novo' ? irPara({ c: 'novo' }) : ficha(id))} />}
     </>
   )
