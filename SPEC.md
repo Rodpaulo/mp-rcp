@@ -269,6 +269,7 @@ Regras:
 - `perfis` tem uma linha por conta da direcção; a migração cria-as a partir das contas existentes. `criado_por` e `registado_por` ficam por omissão com a conta autenticada (`auth.uid()`). Uma conta nova no Supabase Auth precisa da sua linha em `perfis` antes de registar no Rede.
 - Listas fechadas por restrição `check` na base de dados; a etiqueta e o papel aceitam só os valores acima.
 - Uma revisão com prazo tem de ter acção; `concluida_em` existe se e só se `concluida` for verdadeiro.
+- Ao gravar uma revisão, o estado do contacto passa a seguir a decisão: `abordar` → `prospecto`; `manter` e `reforcar` → `activa`; `em_espera` → `em_espera`; `encerrar` → `encerrada`. O formulário mostra, antes de gravar, "Ao gravar, o estado passa a X". A actualização é feita pela aplicação, no mesmo gesto que grava a próxima revisão (sem triggers na base).
 - Uma participação por contacto e edição.
 - `updated_at` é actualizado pela aplicação ao gravar (sem triggers na base).
 - Apagar um contacto apaga as suas interacções, revisões e participações. As ligações às tabelas existentes nunca impedem uma operação actual: apagar uma pessoa em `people` limpa `person_id`; apagar uma edição apaga as participações.
