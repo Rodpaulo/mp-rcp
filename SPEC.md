@@ -61,7 +61,8 @@ A entidade central é a **pessoa**, não o evento. É isso que permite, ao longo
 
 ```
 people          id, email (único, minúsculas), name (opcional),
-                newsletter_consent, newsletter_consent_at, created_at
+                newsletter_consent, newsletter_consent_at, created_at,
+                associado_interesse, associado_interesse_at (migração 006)
 editions        id, code ('RCP06'), title, event_date, is_open (só uma aberta), room_count
 registrations   person_id + edition_id (chave), source ('mailpoet'|'pretix'|'manual')
 checkins        person_id + edition_id (chave), source ('qr'|'manual'), checked_in_at
@@ -72,11 +73,12 @@ Regras:
 - Uma presença por pessoa e edição: repetir o QR confirma, não duplica.
 - Email desconhecido no check-in = walk-in: cria-se a pessoa e regista-se a presença.
 - Consentimento de newsletter só sobe, nunca desce (a pessoa pode retirar por email à associação; não há botão para isso no piloto).
+- Interesse em ser associado (migração 006, 30 de Outubro de 2026): o mesmo princípio. `associado_interesse` só sobe; `associado_interesse_at` guarda a data do primeiro pedido.
 - A edição aberta é determinada no servidor: o URL do QR não muda de edição para edição.
 
 ## 6. Segurança e acesso
 
-- **Público (anon)**: não lê nem escreve tabelas. Só pode chamar a função `check_in(p_email, p_newsletter)`, que corre com `security definer` e devolve apenas `{status, edition}`. `status` ∈ `ok`, `already`, `invalid_email`, `no_open_edition`. Nunca devolve nome nem se a pessoa estava inscrita — a página pública não pode servir para testar emails de terceiros.
+- **Público (anon)**: não lê nem escreve tabelas. Só pode chamar a função `check_in(p_email, p_newsletter)` e, desde a migração 006, `check_in_associado(p_email, p_newsletter, p_associado_interesse)`, que chama `check_in` por dentro e, com o interesse verdadeiro e a presença registada, marca `associado_interesse` e `associado_interesse_at` em `people`. As duas correm com `security definer`, têm as mesmas permissões (`anon` e `authenticated`) e devolvem apenas `{status, edition}`. `check_in_associado` tem nome próprio e os três parâmetros obrigatórios, para nunca se confundir com `check_in`; a `check_in` não foi alterada. `status` ∈ `ok`, `already`, `invalid_email`, `no_open_edition`. Nunca devolve nome nem se a pessoa estava inscrita — a página pública não pode servir para testar emails de terceiros.
 - **Direcção (authenticated)**: acesso total às quatro tabelas por RLS. Só existem duas contas, criadas à mão no painel. **O registo livre de utilizadores está desligado no Supabase** — é a linha que impede estranhos de verem os dados.
 - Importação de inscritos pela função `import_registrations(p_edition_code, p_emails[])`, reservada a utilizadores autenticados, repetível sem duplicar.
 - Chaves do Supabase (modelo novo): a **publishable key** (`sb_publishable_...`) é a única usada pela aplicação; corresponde ao papel `anon` sem sessão e `authenticated` com sessão. A **secret key** (sucessora da service_role) nunca é usada nem copiada para lado nenhum.
@@ -92,11 +94,12 @@ Estado inicial:
 - Logótipo ou nome "Matinés Pensantes"; título "Regresso à Casa de Partida"; linha com código e título da edição aberta (ex.: "RCP06 · Portugal em Tom Maior").
 - Campo: *O teu email* (type email, autocomplete email, autocapitalize off, teclado de email no telemóvel).
 - Caixa, desmarcada por defeito: *Quero receber a newsletter da Matinés Pensantes.*
+- Por baixo, no mesmo estilo e também desmarcada por defeito: *Quero ser associado da Matinés Pensantes. Contactem-me.* (desde 30 de Outubro de 2026).
 - Botão grande: **Estou cá**.
 - Rodapé: ligação "Como tratamos os teus dados" (abre um bloco de 5 linhas na própria página).
 
 Comportamento:
-- Ao submeter, chama `check_in`. Enquanto espera, o botão desactiva-se e mostra "Um momento…".
+- Ao submeter, chama `check_in_associado` (desde a migração 006; antes, `check_in`). Enquanto espera, o botão desactiva-se e mostra "Um momento…".
 - `ok` → confirmação curta e calorosa: "Bem-vindo/a de volta à Casa de Partida. Boa conversa." (sem o email, sem dados).
 - `already` → "Já estavas registado/a. Boa conversa."
 - `invalid_email` → "Esse email não parece completo. Vê se não falta nada." (sem bloquear por excesso).
@@ -237,6 +240,7 @@ Um CRM leve, dentro do admin, para a relação da Matinés Pensantes com oradore
 - **Apagar um contacto**: na ficha, com confirmação explícita; a base apaga por cascata as interacções, revisões e participações do contacto (ver 14.5), sem código adicional.
 - **Vista "Por rever"**: contactos com a próxima revisão vencida ou por marcar.
 - **Vista "Acções em atraso"**: acções com prazo passado e não concluídas.
+- **Vista "Interessados"** (30 de Outubro de 2026): as pessoas de `people` que marcaram, na página de entrada, *Quero ser associado*, com nome, email e data do pedido, e se já há um contacto ligado (`person_id`). "Criar contacto" cria em `contactos` uma pessoa com o nome (ou, sem nome, o email), o email, a etiqueta `associado`, `pedido_adesao_em` igual ao dia do pedido, `person_id` ligado e estado `a_avaliar`; com contacto ligado, o botão passa a "Abrir contacto".
 
 ### 14.4 Fora do âmbito
 Pipeline visual (colunas, arrastar e largar); envio de email a partir da aplicação; pontuações ou classificações automáticas de contactos; gestão de quotas e pagamentos; importação automática de contactos; papéis e permissões diferentes entre o Miguel e a Ana.
@@ -274,6 +278,7 @@ Regras:
 - `updated_at` é actualizado pela aplicação ao gravar (sem triggers na base).
 - Apagar um contacto apaga as suas interacções, revisões e participações. As ligações às tabelas existentes nunca impedem uma operação actual: apagar uma pessoa em `people` limpa `person_id`; apagar uma edição apaga as participações.
 - "Por rever": contactos não encerrados com `proxima_revisao` nula ou até hoje. "Acções em atraso": revisões não concluídas com `prazo` anterior a hoje.
+- "Interessados": pessoas com `people.associado_interesse` verdadeiro, a mais recente primeiro. O Rede só lê `people`; "Criar contacto" escreve só em `contactos`.
 
 ### 14.6 Segurança e acesso
 - Mesmas políticas das tabelas actuais: acesso total para `authenticated`, nenhum para `anon`. Sem funções públicas: o Rede não aparece nas páginas `/` nem `/biblioteca`.
@@ -284,7 +289,7 @@ Regras:
 - A migração é aplicada pelo Miguel no SQL Editor, depois de a ler e de exportar as tabelas actuais em CSV. Não há base de teste: o ramo `rede` trabalha contra a base de produção.
 - O código do Rede nunca escreve em tabelas existentes. Lê `editions` (para as participações) e `people` (para a ligação por email), e mais nada.
 - Rotas: o `vercel.json` não muda. O admin ganha separadores dentro de `/admin` (`?s=rede`); o módulo Rede carrega com `React.lazy`, para não pesar na página pública. A leitura automática a cada 15 s do painel não se aplica ao Rede.
-- `Admin.jsx` e `Panel.jsx` podem mudar no ramo `rede`. O ramo pode ser enviado para o GitHub para ter pré-visualização na Vercel; `main` e a Vercel Production não se tocam antes de 4 de Novembro.
+- `Admin.jsx` e `Panel.jsx` podem mudar no ramo `rede`. O ramo pode ser enviado para o GitHub para ter pré-visualização na Vercel; `main` recebeu o Rede a 30 de Outubro de 2026 e ficou fechado até 4 de Novembro, com uma excepção decidida no mesmo dia: o interesse em ser associado (migração 006, página de entrada e vista "Interessados"), feito no ramo `associado`, a partir de `main`. O trabalho seguinte do Rede vive no ramo `rede` até lá.
 - Sem dependências novas. Interface em português europeu, tratamento por tu.
 
 ### 14.8 Fases seguintes
