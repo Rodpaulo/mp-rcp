@@ -1,0 +1,164 @@
+/* Rede: só o que falta às classes do admin (Admin.css). Carrega com o módulo, nunca na página pública. */
+
+.rede-filtros {
+  display: grid;
+  gap: 0 1rem;
+}
+
+.rede-select,
+.rede-notas {
+  min-height: 44px;
+  padding: 0.5rem;
+  font: inherit;
+  font-size: 16px; /* abaixo de 16px o iOS faz zoom ao focar */
+  font-weight: normal;
+  color: var(--navy);
+  background: #fff;
+  border: 2px solid var(--navy);
+  border-radius: 6px;
+}
+
+.rede-notas {
+  display: block;
+  width: 100%;
+  resize: vertical;
+}
+
+.rede-contagem {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+}
+
+.rede-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rede-lista li {
+  border-bottom: 1px solid #D5DCE2;
+}
+
+.rede-linha {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+  padding: 0.75rem 0.25rem;
+  font: inherit;
+  text-align: left;
+  color: var(--navy);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.rede-linha:hover,
+.rede-linha:focus-visible {
+  background: var(--background);
+}
+
+.rede-linha-nome {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.rede-linha-detalhe {
+  font-size: 0.875rem;
+}
+
+.rede-etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.rede-etiqueta,
+.rede-estado {
+  padding: 0.125rem 0.5rem;
+  font-size: 0.8125rem;
+  border-radius: 999px;
+}
+
+.rede-etiqueta {
+  background: var(--grey-light);
+}
+
+/* Texto navy sobre turquesa e amarelo, como manda o manual. */
+.rede-estado {
+  font-weight: 600;
+  border: 1px solid var(--navy);
+}
+
+.rede-estado-activa {
+  background: var(--turquoise);
+}
+
+.rede-estado-prospecto,
+.rede-estado-a_avaliar {
+  background: #fff;
+}
+
+.rede-estado-em_espera {
+  background: var(--yellow);
+}
+
+.rede-estado-encerrada {
+  background: var(--grey-light);
+  border-style: dashed;
+}
+
+.rede-form {
+  max-width: 40rem;
+}
+
+.rede-grupo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  border: 0;
+}
+
+.rede-grupo legend {
+  margin-bottom: 0.25rem;
+  padding: 0;
+  font-weight: 600;
+}
+
+.rede-opcao {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 44px;
+}
+
+.rede-opcao input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+
+.rede-ligacao {
+  margin: -0.25rem 0 1rem;
+  padding: 0.75rem;
+  background: var(--background);
+  border-left: 4px solid var(--turquoise-dark);
+  border-radius: 4px;
+}
+
+.rede-ligacao p {
+  margin: 0 0 0.5rem;
+}
+
+.rede-aviso {
+  margin: -0.5rem 0 1rem;
+  font-size: 0.875rem;
+}
+
+@media (min-width: 48rem) {
+  .rede-filtros {
+    grid-template-columns: 2fr 1fr 1fr;
+  }
+}
