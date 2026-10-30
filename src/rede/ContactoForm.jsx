@@ -62,7 +62,7 @@ function paraBase(form) {
   return dados
 }
 
-export default function ContactoForm({ id, onVoltar }) {
+export default function ContactoForm({ id, onVoltar, onGravado }) {
   const [form, setForm] = useState(id ? null : VAZIO)
   const [organizacoes, setOrganizacoes] = useState([])
   const [pessoa, setPessoa] = useState(null) // registo de people já ligado
@@ -160,9 +160,8 @@ export default function ContactoForm({ id, onVoltar }) {
     setErroGravar(false)
     try {
       const dados = paraBase(form)
-      if (id) await actualizarContacto(id, dados)
-      else await criarContacto(dados)
-      onVoltar()
+      const gravado = id ? await actualizarContacto(id, dados) : await criarContacto(dados)
+      onGravado(gravado.id)
     } catch (error) {
       console.error('gravar contacto falhou:', error)
       setErroGravar(true)
@@ -172,7 +171,7 @@ export default function ContactoForm({ id, onVoltar }) {
 
   const voltar = (
     <button type="button" className="admin-button-secondary" onClick={onVoltar}>
-      Voltar à lista
+      {id ? 'Voltar à ficha' : 'Voltar à lista'}
     </button>
   )
 

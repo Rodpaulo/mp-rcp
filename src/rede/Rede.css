@@ -157,7 +157,163 @@
   font-size: 0.875rem;
 }
 
+/* ---------- Ficha ---------- */
+
+.rede-ligacao-texto {
+  padding: 0;
+  font: inherit;
+  color: var(--turquoise-dark);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.rede-dados {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 1rem;
+  margin: 1rem 0;
+}
+
+.rede-dados dt {
+  font-weight: 600;
+}
+
+.rede-dados dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.rede-texto {
+  margin: 0 0 0.5rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.rede-membros {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+}
+
+.rede-membros li {
+  padding: 0.25rem 0;
+}
+
+.rede-accoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.rede-historico {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rede-historico li {
+  padding: 0.75rem 0 0.75rem 0.75rem;
+  border-left: 4px solid var(--grey-light);
+  border-bottom: 1px solid #D5DCE2;
+}
+
+.rede-historico li.rede-historico-revisao {
+  border-left-color: var(--navy);
+}
+
+.rede-historico-cabeca {
+  margin: 0 0 0.25rem;
+  font-weight: 600;
+}
+
+.rede-historico-pe {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.rede-botao-perigo {
+  min-height: 40px;
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  color: #A3262A;
+  background: #fff;
+  border: 2px solid #A3262A;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.rede-botao-perigo:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ---------- Formulários de interacção e revisão ---------- */
+
+/* Escolhas em botões grandes, fáceis de acertar com o polegar. */
+.rede-botoes-escolha {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.rede-escolha {
+  position: relative;
+}
+
+.rede-escolha input {
+  position: absolute;
+  opacity: 0;
+}
+
+.rede-escolha span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0.5rem;
+  font-weight: 600;
+  text-align: center;
+  background: #fff;
+  border: 2px solid var(--navy);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.rede-escolha input:checked + span {
+  color: #fff;
+  background: var(--navy);
+}
+
+.rede-escolha input:focus-visible + span {
+  outline: 3px solid var(--turquoise-dark);
+  outline-offset: 2px;
+}
+
+/* O botão de gravar fica no fundo do ecrã, ao alcance do polegar. */
+.rede-gravar {
+  position: sticky;
+  bottom: 0;
+  margin: 0 -1rem -1rem;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border-top: 1px solid #D5DCE2;
+}
+
+.rede-gravar .admin-button {
+  width: 100%;
+  min-height: 52px;
+}
+
 @media (min-width: 48rem) {
+  .rede-botoes-escolha {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
   .rede-filtros {
     grid-template-columns: 2fr 1fr 1fr;
   }

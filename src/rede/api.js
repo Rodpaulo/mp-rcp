@@ -11,7 +11,13 @@ function semErro({ data, error }) {
   return data
 }
 
-// ---------- contactos (tabela nova: lê e escreve) ----------
+// id da conta autenticada (= perfis.id), para o responsável por omissão.
+export async function obterUtilizadorId() {
+  const { data } = await supabase.auth.getSession()
+  return data.session?.user.id ?? null
+}
+
+// ---------- contactos (tabela nova: lê, escreve e apaga) ----------
 
 export async function listarContactos() {
   return semErro(await supabase.from('contactos').select(CAMPOS_LISTA).order('nome'))
@@ -20,6 +26,12 @@ export async function listarContactos() {
 export async function listarOrganizacoes() {
   return semErro(
     await supabase.from('contactos').select('id, nome').eq('tipo_registo', 'organizacao').order('nome'),
+  )
+}
+
+export async function listarMembros(organizacaoId) {
+  return semErro(
+    await supabase.from('contactos').select('id, nome').eq('organizacao_id', organizacaoId).order('nome'),
   )
 }
 
@@ -40,6 +52,56 @@ export async function actualizarContacto(id, dados) {
       .select('id')
       .single(),
   )
+}
+
+// A base apaga por cascata as interacções, revisões e participações (migração 004).
+export async function apagarContacto(id) {
+  return semErro(await supabase.from('contactos').delete().eq('id', id))
+}
+
+// ---------- perfis (tabela nova: só leitura nesta versão) ----------
+
+export async function listarPerfis() {
+  return semErro(await supabase.from('perfis').select('id, nome').order('nome'))
+}
+
+// ---------- interaccoes e revisoes (tabelas novas: lê e escreve) ----------
+
+export async function listarInteraccoes(contactoId) {
+  return semErro(
+    await supabase
+      .from('interaccoes')
+      .select('id, data, canal, resumo, registado_por, created_at')
+      .eq('contacto_id', contactoId),
+  )
+}
+
+export async function criarInteraccao(dados) {
+  return semErro(await supabase.from('interaccoes').insert(dados))
+}
+
+export async function listarRevisoes(contactoId) {
+  return semErro(
+    await supabase
+      .from('revisoes')
+      .select('id, data, decisao, accao, prazo, responsavel, concluida, concluida_em, registado_por, created_at')
+      .eq('contacto_id', contactoId),
+  )
+}
+
+export async function criarRevisao(dados) {
+  return semErro(await supabase.from('revisoes').insert(dados))
+}
+
+// ---------- participacoes (tabela nova: só a contagem neste passo) ----------
+
+export async function contarParticipacoes(contactoId) {
+  const { count, error } = await supabase
+    .from('participacoes')
+    .select('contacto_id', { count: 'exact', head: true })
+    .eq('contacto_id', contactoId)
+  if (error) throw error
+  return count ?? 0
 }
 
 // ---------- people (tabela existente: só leitura) ----------
