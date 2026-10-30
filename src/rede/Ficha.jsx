@@ -11,6 +11,7 @@ import {
   obterPessoa,
 } from './api.js'
 import { CANAIS, DECISOES, ESTADOS, ETIQUETAS, TIPOS, rotulo } from './listas.js'
+import Participacoes from './Participacoes.jsx'
 
 function plural(n, singular, plural) {
   return `${n} ${n === 1 ? singular : plural}`
@@ -268,6 +269,8 @@ export default function Ficha({ id, onLista, onAbrir, onModo, onApagado }) {
           </ol>
         )}
       </section>
+
+      <Participacoes contactoId={id} />
 
       <section className="admin-section">
         <h2>Apagar contacto</h2>

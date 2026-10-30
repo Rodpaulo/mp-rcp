@@ -41,6 +41,15 @@ export const DECISOES = [
   { valor: 'encerrar', rotulo: 'Encerrar' },
 ]
 
+// Estado em que o contacto fica ao gravar uma revisão com esta decisão (SPEC 14.5).
+export const ESTADO_POR_DECISAO = {
+  abordar: 'prospecto',
+  manter: 'activa',
+  reforcar: 'activa',
+  em_espera: 'em_espera',
+  encerrar: 'encerrada',
+}
+
 export const PAPEIS = [
   { valor: 'orador', rotulo: 'Orador' },
   { valor: 'parceiro', rotulo: 'Parceiro' },

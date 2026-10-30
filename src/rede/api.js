@@ -93,7 +93,46 @@ export async function criarRevisao(dados) {
   return semErro(await supabase.from('revisoes').insert(dados))
 }
 
-// ---------- participacoes (tabela nova: só a contagem neste passo) ----------
+export async function concluirAccao(revisaoId, data) {
+  return semErro(await supabase.from('revisoes').update({ concluida: true, concluida_em: data }).eq('id', revisaoId))
+}
+
+// ---------- vistas novas (só leitura) ----------
+
+export async function listarPorRever() {
+  return semErro(
+    await supabase
+      .from('rede_por_rever')
+      .select('*')
+      .order('proxima_revisao', { ascending: true, nullsFirst: true })
+      .order('nome'),
+  )
+}
+
+export async function listarAccoesEmAtraso() {
+  return semErro(await supabase.from('rede_accoes_em_atraso').select('*').order('prazo').order('contacto_nome'))
+}
+
+// ---------- participacoes (tabela nova: lê, escreve e apaga) ----------
+
+export async function listarParticipacoes(contactoId) {
+  return semErro(
+    await supabase
+      .from('participacoes')
+      .select('edition_id, papel, notas, editions(code, title, event_date)')
+      .eq('contacto_id', contactoId),
+  )
+}
+
+export async function criarParticipacao(dados) {
+  return semErro(await supabase.from('participacoes').insert(dados))
+}
+
+export async function apagarParticipacao(contactoId, edicaoId) {
+  return semErro(
+    await supabase.from('participacoes').delete().eq('contacto_id', contactoId).eq('edition_id', edicaoId),
+  )
+}
 
 export async function contarParticipacoes(contactoId) {
   const { count, error } = await supabase
@@ -102,6 +141,14 @@ export async function contarParticipacoes(contactoId) {
     .eq('contacto_id', contactoId)
   if (error) throw error
   return count ?? 0
+}
+
+// ---------- editions (tabela existente: só leitura) ----------
+
+export async function listarEdicoes() {
+  return semErro(
+    await supabase.from('editions').select('id, code, title, event_date').order('event_date', { ascending: false }),
+  )
 }
 
 // ---------- people (tabela existente: só leitura) ----------

@@ -1,13 +1,40 @@
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import AccoesEmAtraso from './AccoesEmAtraso.jsx'
 import Contactos from './Contactos.jsx'
 import ContactoForm from './ContactoForm.jsx'
 import Ficha from './Ficha.jsx'
 import InteraccaoForm from './InteraccaoForm.jsx'
+import PorRever from './PorRever.jsx'
 import RevisaoForm from './RevisaoForm.jsx'
 import './Rede.css'
 
+const VISTAS = [
+  { valor: '', rotulo: 'Contactos' },
+  { valor: 'por-rever', rotulo: 'Por rever' },
+  { valor: 'atraso', rotulo: 'Acções em atraso' },
+]
+
+function Vistas({ actual }) {
+  return (
+    <nav className="rede-vistas" aria-label="Vistas do Rede">
+      {VISTAS.map((vista) => (
+        <Link
+          key={vista.valor}
+          to={vista.valor ? `/admin?s=rede&v=${vista.valor}` : '/admin?s=rede'}
+          className="rede-vista"
+          aria-current={actual === vista.valor ? 'page' : undefined}
+        >
+          {vista.rotulo}
+        </Link>
+      ))}
+    </nav>
+  )
+}
+
 // Navegação do Rede por parâmetros no endereço, para o "Voltar" do telemóvel funcionar:
 //   ?s=rede                       lista de contactos
+//   ?s=rede&v=por-rever           vista "Por rever"
+//   ?s=rede&v=atraso              vista "Acções em atraso"
 //   ?s=rede&c=novo                contacto novo
 //   ?s=rede&c=<id>                ficha do contacto
 //   ?s=rede&c=<id>&m=editar       editar contacto
@@ -74,5 +101,16 @@ export default function Rede() {
     )
   }
 
-  return <Contactos onAbrir={(id) => (id === 'novo' ? irPara({ c: 'novo' }) : ficha(id))} />
+  const vista = VISTAS.some((item) => item.valor === searchParams.get('v')) ? searchParams.get('v') : ''
+
+  return (
+    <>
+      <Vistas actual={vista} />
+      {vista === 'por-rever' && (
+        <PorRever onAbrir={(id) => ficha(id)} onRever={(id) => irPara({ c: id, m: 'revisao' })} />
+      )}
+      {vista === 'atraso' && <AccoesEmAtraso onAbrir={(id) => ficha(id)} />}
+      {vista === '' && <Contactos onAbrir={(id) => (id === 'novo' ? irPara({ c: 'novo' }) : ficha(id))} />}
+    </>
+  )
 }

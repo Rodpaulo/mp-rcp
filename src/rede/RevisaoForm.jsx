@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { LOAD_ERROR, SAVE_ERROR } from '../admin/text.js'
 import { actualizarContacto, criarRevisao, listarPerfis, obterContacto, obterUtilizadorId } from './api.js'
 import { hoje, somarMeses } from './datas.js'
-import { DECISOES } from './listas.js'
+import { DECISOES, ESTADOS, ESTADO_POR_DECISAO, rotulo } from './listas.js'
 
 const MESES_ATE_PROXIMA = 12
 
@@ -66,11 +66,14 @@ export default function RevisaoForm({ contactoId, onVoltar, onGravado }) {
       return
     }
     try {
-      await actualizarContacto(contactoId, { proxima_revisao: proxima || null })
+      await actualizarContacto(contactoId, {
+        proxima_revisao: proxima || null,
+        estado: ESTADO_POR_DECISAO[decisao],
+      })
       onGravado()
     } catch (error) {
       // A revisão já está gravada: não a gravar de novo.
-      console.error('actualizar próxima revisão falhou:', error)
+      console.error('actualizar próxima revisão e estado falhou:', error)
       setGravadaSemProxima(true)
       setAGravar(false)
     }
@@ -80,7 +83,7 @@ export default function RevisaoForm({ contactoId, onVoltar, onGravado }) {
     return (
       <section className="admin-section">
         <p className="admin-error" role="alert">
-          A revisão ficou gravada, mas a data da próxima revisão não. Corrige-a em "Editar", na ficha.
+          A revisão ficou gravada, mas a próxima revisão e o estado do contacto não. Corrige-os em "Editar", na ficha.
         </p>
         <button type="button" className="admin-button" onClick={onGravado}>
           Ir para a ficha
@@ -161,6 +164,12 @@ export default function RevisaoForm({ contactoId, onVoltar, onGravado }) {
           }}
         />
       </label>
+
+      {decisao && (
+        <p className="rede-aviso-estado" role="status">
+          Ao gravar, o estado passa a {rotulo(ESTADOS, ESTADO_POR_DECISAO[decisao])}.
+        </p>
+      )}
 
       {erro && (
         <p className="admin-error" role="alert">
