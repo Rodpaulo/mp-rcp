@@ -234,6 +234,7 @@ Um CRM leve, dentro do admin, para a relação da Matinés Pensantes com oradore
 - **Registo de interacção**: pensado para telemóvel, com uma mão: data (hoje por omissão), canal, resumo. Três campos e um botão.
 - **Revisões**: data, decisão, acção seguinte com prazo e responsável, conclusão. Ao gravar uma revisão, a próxima revisão do contacto passa por omissão para 12 meses depois, editável.
 - **Participações**: ligação de um contacto a uma edição do RCP, com papel e notas.
+- **Apagar um contacto**: na ficha, com confirmação explícita; a base apaga por cascata as interacções, revisões e participações do contacto (ver 14.5), sem código adicional.
 - **Vista "Por rever"**: contactos com a próxima revisão vencida ou por marcar.
 - **Vista "Acções em atraso"**: acções com prazo passado e não concluídas.
 
