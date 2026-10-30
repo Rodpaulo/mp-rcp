@@ -19,6 +19,7 @@ export default function CheckIn() {
   const [savedEmail, setSavedEmail] = useState(() => readKey(KEY_EMAIL))
   const [email, setEmail] = useState(() => readKey(KEY_EMAIL) ?? '')
   const [newsletter, setNewsletter] = useState(false)
+  const [associado, setAssociado] = useState(false)
   const [sending, setSending] = useState(false)
   const [message, setMessage] = useState('')
   const [confirmation, setConfirmation] = useState('')
@@ -67,9 +68,11 @@ export default function CheckIn() {
     setSending(true)
     setMessage('')
     try {
-      const { data, error } = await supabase.rpc('check_in', {
+      // check_in_associado faz o mesmo que check_in e marca o interesse em ser associado (migração 006).
+      const { data, error } = await supabase.rpc('check_in_associado', {
         p_email: normalized,
         p_newsletter: newsletter,
+        p_associado_interesse: associado,
       })
       if (error) throw error
 
@@ -167,6 +170,16 @@ export default function CheckIn() {
             <span>Quero receber a newsletter da Matinés Pensantes.</span>
           </label>
 
+          <label className="checkin-checkbox">
+            <input
+              type="checkbox"
+              checked={associado}
+              onChange={(event) => setAssociado(event.target.checked)}
+              disabled={sending}
+            />
+            <span>Quero ser associado da Matinés Pensantes. Contactem-me.</span>
+          </label>
+
           {message && (
             <p className="checkin-message" role="alert">
               {message}
@@ -197,7 +210,8 @@ export default function CheckIn() {
           {showPrivacy && (
             <p id="checkin-privacy" className="checkin-privacy">
               A Matinés Pensantes (geral@matinespensantes.org) regista o teu email para saber quem
-              esteve presente nos seus encontros. Só te enviamos a newsletter se marcares a caixa. Os
+              esteve presente nos seus encontros. Só te enviamos a newsletter se marcares a caixa. Se marcares a
+              caixa de associado, guardamos esse pedido para te contactarmos sobre a adesão. Os
               dados ficam numa base de dados na União Europeia, enquanto a associação organizar o
               Regresso à Casa de Partida. Para consultar ou apagar os teus dados, escreve-nos para
               geral@matinespensantes.org.
