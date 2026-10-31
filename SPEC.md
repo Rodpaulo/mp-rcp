@@ -96,6 +96,7 @@ Estado inicial:
 - Caixa, desmarcada por defeito: *Quero receber a newsletter da Matinés Pensantes.*
 - Por baixo, no mesmo estilo e também desmarcada por defeito: *Quero ser associado da Matinés Pensantes. Contactem-me.* (desde 30 de Outubro de 2026).
 - Botão grande: **Estou cá**.
+- Por baixo, botão secundário **Biblioteca Circulante** (para `/biblioteca`): a mesma largura, altura e letra do "Estou cá", contorno de 2 px e texto em turquesa escura #1F7A82, fundo branco. É a única ligação para `/biblioteca` na página, antes e depois do check-in (desde 31 de Outubro de 2026).
 - Rodapé: ligação "Como tratamos os teus dados" (abre um bloco de 5 linhas na própria página).
 
 Comportamento:
@@ -106,6 +107,12 @@ Comportamento:
 - `no_open_edition` → "Não há nenhuma edição aberta neste momento."
 - Erro de rede → "Não conseguimos registar agora. Tenta outra vez daqui a um minuto, ou diz à organização." (sem termos técnicos).
 - Depois de um `ok`/`already`, o email fica guardado em `localStorage` (`mp_rcp_email`). Na visita seguinte o campo aparece preenchido, com a ligação "Não és tu? Limpar". A mesma edição não se regista duas vezes a partir do mesmo browser: se `localStorage` tiver `mp_rcp_last_edition` igual à edição aberta, a página abre já na confirmação.
+- No ecrã de confirmação (`ok` e `already`), as duas caixas continuam visíveis por baixo da confirmação, seguidas do botão da Biblioteca (desde 31 de Outubro de 2026): muita gente só decide a meio do encontro.
+  - Cada caixa mostra o que foi enviado a partir deste browser, guardado em `localStorage` como o email (`mp_rcp_newsletter`, `mp_rcp_associado`).
+  - Marcar uma caixa chama `check_in_associado` com o email guardado e os dois valores actuais (a função é idempotente: não duplica a presença) e mostra "Guardado" junto à caixa.
+  - Uma caixa marcada fica marcada e desactivada: o consentimento só sobe; retirar faz-se por email, como diz o texto de privacidade.
+  - Se a chamada falhar, a caixa volta a desmarcada, com a mensagem de erro de rede.
+  - "Não és tu? Limpar" esquece também as duas caixas, para a pessoa seguinte no mesmo telemóvel.
 - Sem login, sem cookies de terceiros, sem analytics.
 
 Aspecto: cores do Manual de Identidade 1.1 (azul-marinho #2C3E50, turquesa #3EBDC6 e turquesa escura #1F7A82 para botões e ligações, fundo claro), Rajdhani nos títulos e Montserrat no texto, carregadas do Google Fonts com fallback para Arial; contraste alto, legível na sala do Pestana à noite; nenhum texto branco sobre turquesa nem sobre amarelo. Sem animações além do estado do botão.

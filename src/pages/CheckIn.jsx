@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
-import { KEY_EMAIL, KEY_LAST_EDITION, readKey, removeKey, writeKey } from '../lib/storage.js'
+import {
+  KEY_ASSOCIADO,
+  KEY_EMAIL,
+  KEY_LAST_EDITION,
+  KEY_NEWSLETTER,
+  readKey,
+  removeKey,
+  writeKey,
+} from '../lib/storage.js'
 import './CheckIn.css'
 
 const TEXT = {
@@ -10,6 +18,101 @@ const TEXT = {
   invalid: 'Esse email não parece completo. Vê se não falta nada.',
   closed: 'Não há nenhuma edição aberta neste momento.',
   error: 'Não conseguimos registar agora. Tenta outra vez daqui a um minuto, ou diz à organização.',
+  saved: 'Guardado',
+}
+
+const LABEL_NEWSLETTER = 'Quero receber a newsletter da Matinés Pensantes.'
+const LABEL_ASSOCIADO = 'Quero ser associado da Matinés Pensantes. Contactem-me.'
+
+// check_in_associado faz o mesmo que check_in e marca o interesse em ser associado (migração 006).
+// É idempotente: repetir não duplica a presença, e o consentimento só sobe.
+async function sendCheckIn(email, newsletter, associado) {
+  const { data, error } = await supabase.rpc('check_in_associado', {
+    p_email: email,
+    p_newsletter: newsletter,
+    p_associado_interesse: associado,
+  })
+  if (error) throw error
+  return data
+}
+
+function rememberBoxes(newsletter, associado) {
+  if (newsletter) writeKey(KEY_NEWSLETTER, '1')
+  if (associado) writeKey(KEY_ASSOCIADO, '1')
+}
+
+function LibraryButton() {
+  return (
+    <Link className="checkin-library" to="/biblioteca">
+      Biblioteca Circulante
+    </Link>
+  )
+}
+
+// Ecrã de confirmação: as duas caixas continuam à mão, porque muita gente só decide a meio do encontro.
+// Uma caixa marcada fica marcada e fechada (o consentimento só sobe; retirar faz-se por email).
+function LaterBoxes({ email }) {
+  const [newsletter, setNewsletter] = useState(() => readKey(KEY_NEWSLETTER) === '1')
+  const [associado, setAssociado] = useState(() => readKey(KEY_ASSOCIADO) === '1')
+  const [sending, setSending] = useState(null) // 'newsletter' | 'associado' | null
+  const [saved, setSaved] = useState([]) // caixas gravadas neste ecrã, para mostrar "Guardado"
+  const [message, setMessage] = useState('')
+
+  async function handleMark(box) {
+    const next = { newsletter, associado, [box]: true }
+    const setBox = box === 'newsletter' ? setNewsletter : setAssociado
+    setBox(true)
+    setSending(box)
+    setMessage('')
+    try {
+      const data = await sendCheckIn(email, next.newsletter, next.associado)
+      if (data?.status !== 'ok' && data?.status !== 'already') {
+        throw new Error(`resposta inesperada de check_in: ${JSON.stringify(data)}`)
+      }
+      rememberBoxes(next.newsletter, next.associado)
+      setSaved((list) => [...list, box])
+    } catch (error) {
+      console.error('gravar caixa falhou:', error)
+      setBox(false)
+      setMessage(TEXT.error)
+    } finally {
+      setSending(null)
+    }
+  }
+
+  const boxes = [
+    { key: 'newsletter', label: LABEL_NEWSLETTER, checked: newsletter },
+    { key: 'associado', label: LABEL_ASSOCIADO, checked: associado },
+  ]
+
+  return (
+    <div>
+      {boxes.map((box) => (
+        <label key={box.key} className="checkin-checkbox">
+          <input
+            type="checkbox"
+            checked={box.checked}
+            onChange={() => handleMark(box.key)}
+            disabled={box.checked || sending !== null}
+          />
+          <span>
+            {box.label}
+            {saved.includes(box.key) && (
+              <span className="checkin-saved" role="status">
+                {' '}
+                {TEXT.saved}
+              </span>
+            )}
+          </span>
+        </label>
+      ))}
+      {message && (
+        <p className="checkin-message" role="alert">
+          {message}
+        </p>
+      )}
+    </div>
+  )
 }
 
 export default function CheckIn() {
@@ -68,17 +171,12 @@ export default function CheckIn() {
     setSending(true)
     setMessage('')
     try {
-      // check_in_associado faz o mesmo que check_in e marca o interesse em ser associado (migração 006).
-      const { data, error } = await supabase.rpc('check_in_associado', {
-        p_email: normalized,
-        p_newsletter: newsletter,
-        p_associado_interesse: associado,
-      })
-      if (error) throw error
+      const data = await sendCheckIn(normalized, newsletter, associado)
 
       if (data?.status === 'ok' || data?.status === 'already') {
         writeKey(KEY_EMAIL, normalized)
         writeKey(KEY_LAST_EDITION, data.edition)
+        rememberBoxes(newsletter, associado)
         setSavedEmail(normalized)
         setConfirmation(data.status === 'ok' ? TEXT.ok : TEXT.already)
         setStage('done')
@@ -97,9 +195,12 @@ export default function CheckIn() {
     }
   }
 
+  // Outra pessoa no mesmo telemóvel: esquece o email e as caixas da anterior.
   function handleClear() {
     removeKey(KEY_EMAIL)
     removeKey(KEY_LAST_EDITION)
+    removeKey(KEY_NEWSLETTER)
+    removeKey(KEY_ASSOCIADO)
     setSavedEmail(null)
     setEmail('')
     setMessage('')
@@ -128,9 +229,8 @@ export default function CheckIn() {
           <p className="checkin-confirmation" role="status">
             {confirmation}
           </p>
-          <Link className="checkin-library" to="/biblioteca">
-            Biblioteca Circulante →
-          </Link>
+          {savedEmail && <LaterBoxes email={savedEmail} />}
+          <LibraryButton />
         </>
       )}
 
@@ -167,7 +267,7 @@ export default function CheckIn() {
               onChange={(event) => setNewsletter(event.target.checked)}
               disabled={sending}
             />
-            <span>Quero receber a newsletter da Matinés Pensantes.</span>
+            <span>{LABEL_NEWSLETTER}</span>
           </label>
 
           <label className="checkin-checkbox">
@@ -177,7 +277,7 @@ export default function CheckIn() {
               onChange={(event) => setAssociado(event.target.checked)}
               disabled={sending}
             />
-            <span>Quero ser associado da Matinés Pensantes. Contactem-me.</span>
+            <span>{LABEL_ASSOCIADO}</span>
           </label>
 
           {message && (
@@ -190,9 +290,7 @@ export default function CheckIn() {
             {sending ? 'Um momento…' : 'Estou cá'}
           </button>
 
-          <Link className="checkin-only-library" to="/biblioteca">
-            Só vens à Biblioteca?
-          </Link>
+          <LibraryButton />
         </form>
       )}
 

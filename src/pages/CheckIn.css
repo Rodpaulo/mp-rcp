@@ -124,23 +124,26 @@
   line-height: 1.4;
 }
 
-/* Botão secundário: contorno navy, fundo claro. */
+/* Botão secundário da Biblioteca: as mesmas medidas e letra do "Estou cá", contorno e texto
+   em turquesa escura sobre branco (5:1). Antes e depois do check-in, por baixo do botão principal
+   ou das caixas, com o mesmo espaço que separa as caixas (1.5rem). */
 .checkin-library {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
   min-height: 52px;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
   padding: 0.75rem 1rem;
   font-family: var(--font-title);
-  font-size: 1.25rem;
+  font-size: 1.375rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--navy);
+  color: var(--turquoise-dark);
   text-decoration: none;
   background: #fff;
-  border: 2px solid var(--navy);
+  border: 2px solid var(--turquoise-dark);
   border-radius: 8px;
 }
 
@@ -149,11 +152,10 @@
   outline-offset: 2px;
 }
 
-.checkin-only-library {
-  align-self: center;
-  margin-top: 2rem;
-  font-size: 0.9375rem;
-  color: var(--turquoise-dark);
+/* "Guardado", junto à caixa marcada no ecrã de confirmação. */
+.checkin-saved {
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .checkin-footer {
