@@ -117,6 +117,10 @@ Comportamento:
 
 Aspecto: cores do Manual de Identidade 1.1 (azul-marinho #2C3E50, turquesa #3EBDC6 e turquesa escura #1F7A82 para botões e ligações, fundo claro), Rajdhani nos títulos e Montserrat no texto, carregadas do Google Fonts com fallback para Arial; contraste alto, legível na sala do Pestana à noite; nenhum texto branco sobre turquesa nem sobre amarelo. Sem animações além do estado do botão.
 
+Para depois de 4 de Novembro de 2026 (registado a 31 de Outubro):
+1. `check_in_associado` passa a devolver também `newsletter_consent` e `associado_interesse` da pessoa, e o ecrã "Já estavas registado/a" mostra nas caixas o estado real da base, e não só o que foi enviado a partir deste browser.
+2. O ecrã de confirmação ganha uma forma de trocar de pessoa (hoje "Não és tu? Limpar" só existe no formulário).
+
 ## 8. Ecrã de administração — `/admin`
 
 Login por email e senha (Supabase Auth). Sem registo, sem "recuperar senha" no piloto (as senhas estão no Bitwarden).
