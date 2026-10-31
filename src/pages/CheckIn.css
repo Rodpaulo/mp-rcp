@@ -134,7 +134,8 @@
   width: 100%;
   min-height: 52px;
   margin-top: 1.5rem;
-  padding: 0.75rem 1rem;
+  /* menos 2px que o "Estou cá": o contorno ocupa-os, e a altura fica igual */
+  padding: calc(0.75rem - 2px) calc(1rem - 2px);
   font-family: var(--font-title);
   font-size: 1.375rem;
   font-weight: 700;
