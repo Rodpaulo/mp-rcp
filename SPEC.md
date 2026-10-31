@@ -232,7 +232,7 @@ Depois: fotografia da mesa no fim; na reconciliação, conferir os números das 
 - Se falhar: Plano B de 13.1.
 
 ### 13.10 Depois do RCP06
-Secção Biblioteca no admin (catálogo, movimentos por edição, correcções, `desaparecido`); eventual leitura de ISBN pela câmara se o volume justificar; percurso de cada livro como conteúdo de newsletter quando houver meses de história.
+Secção Biblioteca no admin (catálogo, movimentos por edição, correcções, `desaparecido`; feita a 31 de Outubro de 2026, ver §15); eventual leitura de ISBN pela câmara se o volume justificar; percurso de cada livro como conteúdo de newsletter quando houver meses de história.
 
 ## 14. Rede (acrescentado a 30 de Outubro de 2026)
 
@@ -317,3 +317,26 @@ Regras:
 - **Associados**, quando a ASBL existir: o pedido de adesão já tem campo (`pedido_adesao_em`); quotas, estado de associado e ligação ao Tally ficam para essa fase, com secção própria neste SPEC.
 - Transferência para contas da associação e revisão do texto de privacidade (dados de contactos externos), depois do RCP06.
 - **Trello automático**: pela API do Trello, criar o cartão de cada contacto e arquivá-lo quando o contacto passa a `encerrada`. Não agora; até lá, a ligação faz-se à mão (§14.5).
+
+## 15. Biblioteca no admin (acrescentado a 31 de Outubro de 2026)
+
+### 15.1 Desvio de âmbito, registado
+A secção 12 fecha a v2 numa lista curta, e o §13.10 deixava a secção Biblioteca no admin para depois do RCP06. A 31 de Outubro o Miguel decidiu acrescentá-la já, no separador RCP, como fez com o Rede, com estas condições: sem migração (se o esquema actual não chegasse, ficava para 4 de Novembro); escritas directas em `books` com as políticas actuais; nenhuma alteração às funções públicas da Biblioteca nem à página `/biblioteca`; trabalho no ramo `rede`, merge em `main` só com ordem do Miguel.
+
+Verificação do esquema (passo 0): um livro acrescentado pela direcção cabe nas colunas actuais. Em `books`, só `number` (único) e `title` são obrigatórios; `entered_by` e `entered_edition_id` aceitam vazio; `status` tem `na_mesa` por omissão; a política `books_admin` dá escrita total a `authenticated`; `normalise_book_number` pode ser chamada por `authenticated`.
+
+### 15.2 Âmbito fechado
+- **Lista**: número, título, autor, estado, edição de entrada, quem trouxe; filtro por estado; pesquisa por número ou título.
+- **Acrescentar**: número (o seguinte ao maior existente, por omissão, editável), título, autor, nota. O número passa por `normalise_book_number` e tem de ser único. Estado `na_mesa`; `entered_edition_id` é a edição aberta, se houver; `entered_by` fica vazio.
+- **Editar**: número (com a mesma validação), título, autor, nota e estado (`na_mesa`, `levado`, `desaparecido`).
+- **Histórico do livro**: movimentos (`book_movements`) com edição, tipo e data, só em leitura.
+- **Apagar**: só livros sem movimentos, com confirmação. Com movimentos, o botão não aparece.
+
+### 15.3 Regras
+- Acrescentar e editar escrevem só em `books`; a secção nunca escreve em `book_movements`. Por isso:
+  - um livro acrescentado pela direcção não tem movimento de entrada e não conta nas "entradas" de `biblioteca_resumo`;
+  - mudar o estado à mão não cria movimento: corrige o estado, não o histórico.
+- Um livro `desaparecido` que volte à mesa pela página pública conta como regresso (`deixar_livro`), como um `levado`.
+- Navegação por parâmetros no endereço, dentro do separador RCP: `?b=novo` (acrescentar), `?b=<id>` (livro), `?b=<id>&m=editar` (editar). Com `b`, o painel do RCP sai do ecrã e a sua leitura a cada 15 s pára; sem `b`, a lista aparece no fim do separador RCP.
+- Código em `src/biblioteca-admin/`, com um `api.js` próprio (o único ficheiro da secção que fala com a Supabase) e um CSS próprio; carrega com `React.lazy`, fora do ficheiro da página pública.
+- Lê `books`, `book_movements`, `editions` e `people` (só o nome ou o email de quem trouxe o livro). Sem dependências novas.

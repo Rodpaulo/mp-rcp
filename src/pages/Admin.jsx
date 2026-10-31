@@ -7,12 +7,16 @@ import '../admin/Admin.css'
 
 // O Rede só se descarrega quando se abre o separador: não pesa na página pública.
 const Rede = lazy(() => import('../rede/Rede.jsx'))
+// A Biblioteca do admin (SPEC 15) também vem à parte, só quando se abre o admin.
+const Biblioteca = lazy(() => import('../biblioteca-admin/Biblioteca.jsx'))
 
 export default function Admin() {
   // undefined: ainda a ler a sessão; null: sem sessão
   const [session, setSession] = useState(undefined)
   const [searchParams] = useSearchParams()
   const tab = searchParams.get('s') === 'rede' ? 'rede' : 'rcp'
+  // ?b=… abre um livro ou o formulário da Biblioteca no lugar do painel do RCP.
+  const livroAberto = searchParams.has('b')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -42,13 +46,19 @@ export default function Admin() {
               Rede
             </Link>
           </nav>
-          {/* O separador que não está à vista desmonta: a leitura a cada 15 s do painel pára no Rede. */}
+          {/* O separador que não está à vista desmonta: a leitura a cada 15 s do painel pára no Rede
+              e quando um livro da Biblioteca está aberto. */}
           {tab === 'rede' ? (
             <Suspense fallback={<p>A carregar…</p>}>
               <Rede />
             </Suspense>
           ) : (
-            <Panel />
+            <>
+              {!livroAberto && <Panel />}
+              <Suspense fallback={<p>A carregar…</p>}>
+                <Biblioteca />
+              </Suspense>
+            </>
           )}
         </>
       ) : (

@@ -1,0 +1,111 @@
+/* Biblioteca no admin: só o que falta às classes do admin (Admin.css). Carrega com a secção, nunca na página pública. */
+
+.biblioteca-filtros {
+  display: grid;
+  gap: 0 1rem;
+}
+
+.biblioteca-select,
+.biblioteca-notas {
+  min-height: 44px;
+  padding: 0.5rem;
+  font: inherit;
+  font-size: 16px; /* abaixo de 16px o iOS faz zoom ao focar */
+  font-weight: normal;
+  color: var(--navy);
+  background: #fff;
+  border: 2px solid var(--navy);
+  border-radius: 6px;
+}
+
+.biblioteca-notas {
+  display: block;
+  width: 100%;
+  resize: vertical;
+}
+
+.biblioteca-form {
+  max-width: 40rem;
+}
+
+.biblioteca-contagem {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+}
+
+.biblioteca-nota {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+}
+
+/* Número do livro na tabela: abre a ficha. */
+.biblioteca-ligacao {
+  min-height: 44px;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--turquoise-dark);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.biblioteca-dados {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 1rem;
+  margin: 1rem 0;
+}
+
+.biblioteca-dados dt {
+  font-weight: 600;
+}
+
+.biblioteca-dados dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.biblioteca-texto {
+  white-space: pre-wrap;
+}
+
+.biblioteca-historico {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.biblioteca-historico li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #D5DCE2;
+}
+
+.biblioteca-historico-tipo {
+  font-weight: 600;
+}
+
+.biblioteca-botao-perigo {
+  min-height: 40px;
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  color: #A3262A;
+  background: #fff;
+  border: 2px solid #A3262A;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.biblioteca-botao-perigo:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+@media (min-width: 48rem) {
+  .biblioteca-filtros {
+    grid-template-columns: 2fr 1fr;
+  }
+}
