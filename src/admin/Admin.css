@@ -21,20 +21,6 @@
   font-size: 1rem;
 }
 
-.admin-bar {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-}
-
-.admin-logo {
-  display: block;
-  height: 36px;
-  width: auto;
-}
-
 .admin-section {
   margin-bottom: 1.5rem;
   padding: 1rem;
@@ -245,31 +231,6 @@
 .admin-ok {
   margin: 0.5rem 0;
   font-weight: 600;
-}
-
-/* Separadores RCP e Rede, por baixo da barra. */
-.admin-tabs {
-  display: flex;
-  gap: 0.25rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid #D5DCE2;
-}
-
-.admin-tab {
-  margin-bottom: -2px;
-  padding: 0.5rem 1rem;
-  font-family: var(--font-title);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  text-decoration: none;
-  color: var(--navy);
-  border-bottom: 3px solid transparent;
-}
-
-.admin-tab[aria-current='page'] {
-  border-bottom-color: var(--navy);
 }
 
 @media (min-width: 48rem) {

@@ -1,5 +1,6 @@
 // O único ficheiro da secção Biblioteca do admin que fala com a Supabase (SPEC 15).
-// Escreve só em books, com as políticas actuais; book_movements, editions e people só se lêem.
+// Escreve só em books, com as políticas actuais; book_movements, editions, people e a vista
+// biblioteca_resumo só se lêem.
 import { supabase } from '../lib/supabase.js'
 
 const CAMPOS_LIVRO = 'id, number, title, author, note, status, created_at, editions(code), people(name, email)'
@@ -54,4 +55,13 @@ export async function listarMovimentos(livroId) {
 
 export async function obterEdicaoAberta() {
   return semErro(await supabase.from('editions').select('id, code').eq('is_open', true).maybeSingle())
+}
+
+// ---------- biblioteca_resumo (vista existente: só leitura; SPEC 17.3) ----------
+
+// Linha da vista para uma edição: entradas, saídas e livros na mesa agora.
+export async function lerResumoDaEdicao(codigo) {
+  return semErro(
+    await supabase.from('biblioteca_resumo').select('code, entradas, saidas, na_mesa_agora').eq('code', codigo).maybeSingle(),
+  )
 }

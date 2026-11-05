@@ -4,8 +4,8 @@ import LivroForm from './LivroForm.jsx'
 import Livros from './Livros.jsx'
 import './Biblioteca.css'
 
-// Secção Biblioteca do separador RCP (SPEC 15). Navegação por parâmetros no endereço:
-//   /admin                  lista, no fim do separador RCP
+// Separador Biblioteca do admin (SPEC 15 e 17.2). Navegação por parâmetros no endereço:
+//   /admin?s=biblioteca     lista
 //   /admin?b=novo           acrescentar livro
 //   /admin?b=<id>           livro
 //   /admin?b=<id>&m=editar  editar livro
@@ -14,7 +14,7 @@ export default function Biblioteca() {
   const livro = searchParams.get('b')
   const modo = searchParams.get('m')
 
-  const lista = (opcoes) => setSearchParams({}, opcoes)
+  const lista = (opcoes) => setSearchParams({ s: 'biblioteca' }, opcoes)
   // Depois de gravar, substitui o formulário no histórico: o "Voltar" não reabre um formulário já gravado.
   const ficha = (id, opcoes) => setSearchParams({ b: id }, opcoes)
 

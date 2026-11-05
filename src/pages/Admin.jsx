@@ -1,26 +1,50 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import Login from '../admin/Login.jsx'
 import Panel from '../admin/Panel.jsx'
+import BarraNumeros from '../admin/mesa/BarraNumeros.jsx'
+import Cabecalho from '../admin/mesa/Cabecalho.jsx'
+import { SEPARADORES } from '../admin/mesa/separadores.js'
+import { lerNomeDaSessao, lerNumerosRcp } from '../admin/numeros.js'
+import { lerNumerosRede } from '../rede/numeros.js'
+import { lerNumerosAssociados } from '../associados/numeros.js'
+import { lerNumerosBiblioteca } from '../biblioteca-admin/numeros.js'
 import '../admin/Admin.css'
+import '../admin/mesa.css'
 
-// O Rede só se descarrega quando se abre o separador: não pesa na página pública.
+// Este ficheiro já vem à parte da página pública (App.jsx, SPEC 17.6); cada módulo vem à parte dele.
 const Rede = lazy(() => import('../rede/Rede.jsx'))
-// A Biblioteca do admin (SPEC 15) também vem à parte, só quando se abre o admin.
 const Biblioteca = lazy(() => import('../biblioteca-admin/Biblioteca.jsx'))
-// Os Associados (SPEC 16) também: só quando se abre o separador.
 const Associados = lazy(() => import('../associados/Associados.jsx'))
 
-const SEPARADORES = ['rede', 'associados']
+const NUMEROS = {
+  rcp: lerNumerosRcp,
+  rede: lerNumerosRede,
+  associados: lerNumerosAssociados,
+  biblioteca: lerNumerosBiblioteca,
+}
+
+// Separador pelo endereço. ?b=… (os endereços da Biblioteca, SPEC 15.3) abre a Biblioteca.
+function separadorDe(searchParams) {
+  const s = searchParams.get('s')
+  if (SEPARADORES.some((item) => item.valor === s)) return s
+  if (searchParams.has('b')) return 'biblioteca'
+  return 'rcp'
+}
+
+// A barra lê de novo ao abrir ou fechar um item (SPEC 17.3); pesquisas e filtros não contam.
+function chaveDosNumeros(separador, searchParams) {
+  const params = ['c', 'p', 'a', 'b', 'm', ...(separador === 'associados' ? ['e'] : [])]
+  return [separador, ...params.map((p) => searchParams.get(p) ?? '')].join('|')
+}
 
 export default function Admin() {
   // undefined: ainda a ler a sessão; null: sem sessão
   const [session, setSession] = useState(undefined)
+  const [nome, setNome] = useState('')
   const [searchParams] = useSearchParams()
-  const tab = SEPARADORES.includes(searchParams.get('s')) ? searchParams.get('s') : 'rcp'
-  // ?b=… abre um livro ou o formulário da Biblioteca no lugar do painel do RCP.
-  const livroAberto = searchParams.has('b')
+  const separador = separadorDe(searchParams)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -28,53 +52,51 @@ export default function Admin() {
     return () => data.subscription.unsubscribe()
   }, [])
 
+  // Só quando muda a conta, não a cada renovação do token.
+  const utilizador = session?.user.id
+  const emailDaSessao = session?.user.email
+  useEffect(() => {
+    if (!utilizador) return
+    lerNomeDaSessao(utilizador, emailDaSessao).then(setNome, (error) => {
+      console.error('carregar nome falhou:', error)
+      setNome(emailDaSessao)
+    })
+  }, [utilizador, emailDaSessao])
+
   if (session === undefined) return null
 
+  if (!session) {
+    return (
+      <div className="mesa-app">
+        <Cabecalho />
+        <main className="admin">
+          <Login />
+        </main>
+      </div>
+    )
+  }
+
   return (
-    <main className="admin">
-      <header className="admin-bar">
-        <img className="admin-logo" src="/logo-mp.png" alt="Matinés Pensantes" />
-        {session && (
-          <button type="button" className="admin-button-secondary" onClick={() => supabase.auth.signOut()}>
-            Sair
-          </button>
+    <div className="mesa-app">
+      <Cabecalho separador={separador} nome={nome} onSair={() => supabase.auth.signOut()} />
+      <BarraNumeros
+        key={separador}
+        ler={NUMEROS[separador]}
+        chave={chaveDosNumeros(separador, searchParams)}
+        intervalo={separador === 'rcp' ? 15000 : null}
+      />
+      {/* O separador que não está à vista desmonta: a leitura a cada 15 s do painel só corre no RCP. */}
+      <main className="admin">
+        {separador === 'rcp' ? (
+          <Panel />
+        ) : (
+          <Suspense fallback={<p>A carregar…</p>}>
+            {separador === 'rede' && <Rede />}
+            {separador === 'associados' && <Associados />}
+            {separador === 'biblioteca' && <Biblioteca />}
+          </Suspense>
         )}
-      </header>
-      {session ? (
-        <>
-          <nav className="admin-tabs" aria-label="Secções">
-            <Link to="/admin" className="admin-tab" aria-current={tab === 'rcp' ? 'page' : undefined}>
-              RCP
-            </Link>
-            <Link to="/admin?s=rede" className="admin-tab" aria-current={tab === 'rede' ? 'page' : undefined}>
-              Rede
-            </Link>
-            <Link to="/admin?s=associados" className="admin-tab" aria-current={tab === 'associados' ? 'page' : undefined}>
-              Associados
-            </Link>
-          </nav>
-          {/* O separador que não está à vista desmonta: a leitura a cada 15 s do painel pára no Rede
-              e quando um livro da Biblioteca está aberto. */}
-          {tab === 'rede' ? (
-            <Suspense fallback={<p>A carregar…</p>}>
-              <Rede />
-            </Suspense>
-          ) : tab === 'associados' ? (
-            <Suspense fallback={<p>A carregar…</p>}>
-              <Associados />
-            </Suspense>
-          ) : (
-            <>
-              {!livroAberto && <Panel />}
-              <Suspense fallback={<p>A carregar…</p>}>
-                <Biblioteca />
-              </Suspense>
-            </>
-          )}
-        </>
-      ) : (
-        <Login />
-      )}
-    </main>
+      </main>
+    </div>
   )
 }

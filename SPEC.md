@@ -522,3 +522,49 @@ Regras:
 **Emails enviados**: os últimos 100, o mais recente primeiro: data, email-tipo, destinatário, estado e, quando falhou, a resposta (campos em falta ou erro do Resend), com ligação para o pedido ou o associado. Uma linha `a_enviar` com mais de 10 minutos pode ser marcada como falhada ("Libertar"), para a função diária tentar de novo (§16.9).
 
 **Regras**: o módulo escreve só nas tabelas da migração 008, em `contactos` (só ligar ou criar o contacto do pedido, como o webhook) e chama `admitir_pedido`; lê `perfis` e `people` (o `person_id` do contacto novo). Datas por extenso com `formatDate`. Sem dependências novas.
+
+## 17. Apresentação do admin (acrescentado a 5 de Novembro de 2026)
+
+### 17.1 Desvio de âmbito, registado
+A 5 de Novembro o Miguel decidiu dar ao admin uma apresentação nova, a partir de um modelo desenhado num canvas: só CSS e estrutura. Nenhuma função da base, migração nem chamada de escrita à Supabase muda, e a navegação por parâmetros no endereço mantém-se exactamente como está. Trabalho no ramo `mesa`, criado a partir do `rede`, em cinco passos com paragem em cada um: 1) cabeçalho, separadores e barra de números; 2) Rede em mesa de trabalho; 3) Associados; 4) Biblioteca; 5) revisão.
+
+### 17.2 Cabeçalho e separadores
+- Cabeçalho branco fino: o nome "matinés pensantes" em Montserrat 300 + 600, como no logótipo; os separadores **RCP · Rede · Associados · Biblioteca** em Rajdhani 700, maiúsculas com espaçamento de 0,14em, o activo com fundo azul-marinho e texto branco; à direita, o nome de quem está com sessão (de `perfis`; sem perfil, o email da sessão) e "Sair".
+- **A Biblioteca passa a separador próprio** (`?s=biblioteca`) e sai do fim do separador RCP. Os endereços da Biblioteca não mudam: `?b=novo`, `?b=<id>` e `?b=<id>&m=editar` abrem o separador Biblioteca. O separador RCP fica só com o painel, que mantém o conteúdo e a leitura a cada 15 s.
+- No telemóvel, o nome e "Sair" ficam numa linha e os separadores na seguinte, numa só linha; alvos de toque de 44 px.
+
+### 17.3 Barra de números
+Quatro cartões brancos sobre fundo cinzento claro (#EDEDED): número em Rajdhani 700 a 40 px, rótulo em Montserrat 12 px. O quarto cartão é turquesa (#3EBDC6, texto azul-marinho) quando o seu número pede acção e é maior do que zero; branco quando é zero. No telemóvel, duas colunas.
+
+| Separador | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|
+| RCP | Presenças (edição aberta) | Inscritos | Ausentes | Contagem de sala ("—" enquanto não for registada) |
+| Rede | Contactos | Por rever | Interessados | **Acções em atraso** (pede acção) |
+| Associados | Pedidos em aberto | Pagos por admitir | Associados (activos) | **Emails que não saíram** (pede acção) |
+| Biblioteca | Na mesa | Levados | Desaparecidos | Entradas nesta edição |
+
+- Os números contam as listas que cada módulo já lê (um `numeros.js` por módulo, com as funções do seu `api.js`). Duas leituras novas, só de leitura, em objectos que já existem: o nome em `perfis` e "Entradas nesta edição" na vista `biblioteca_resumo` (linha da edição aberta). No RCP, a barra lê a edição aberta e `edition_summary`, como o painel, e actualiza-se a cada 15 s enquanto o separador está aberto.
+- "Ausentes" são os inscritos sem presença (`registered_absent`). "Lotação" não existe na base: o quarto número do RCP é a contagem de sala (`room_count`).
+- "Emails que não saíram": entre os últimos 100 envios (a leitura da vista "Emails enviados"), os `falhou` ou `a_enviar` sem envio `enviado` posterior do mesmo email-tipo, ao mesmo pedido ou associado, no mesmo período. Um falhado já recuperado não conta.
+- A barra lê de novo ao mudar de separador e ao abrir ou fechar um item (`c`, `p`, `a`, `b`, `m` e, nos Associados, `e`); pesquisas e filtros não a fazem ler.
+
+### 17.4 Mesa de trabalho (passos 2 a 4)
+- Lista e ficha lado a lado: coluna da esquerda com 340 a 380 px, fundo branco, cantos de 10 px, com título, pesquisa, filtros em pílulas (Rajdhani 600 12 px, maiúsculas) e os itens (nome, linha secundária em cinzento #828487, pílula de estado à direita); o item aberto tem fundo #EDEDED e uma barra carmim de 4 px à esquerda.
+- Coluna da direita com a ficha em cartões brancos: sobretítulo em carmim (Rajdhani 600 12 px, espaçado), nome em Rajdhani 700 32 px, dados em grelha de três colunas (rótulo 11 px cinzento em maiúsculas, valor 600), linha de acções com o botão principal carmim (#C01C36, texto branco) e os secundários com contorno turquesa escura (#1F7A82); as saídas (encerrar, apagar) em texto cinzento, alinhadas à direita. Cartões seguintes para histórico, emails, participações, quotas.
+- No telemóvel, empilham-se: a lista primeiro; ao abrir um item, a ficha ocupa o ecrã e "Voltar" regressa à lista.
+- Aplica-se ao Rede (contactos e ficha; as vistas Por rever, Em atraso e Interessados passam a pílulas da coluna da lista), aos Associados (pedidos e associados; Emails-tipo, Emails enviados e Configuração em largura total) e à Biblioteca (livros e ficha).
+
+### 17.5 Pílulas de estado
+Um só mapa de estado para cor, para os três módulos:
+- fundo #EDEDED: Recebido, A avaliar;
+- fundo turquesa #3EBDC6: Instruções enviadas, Prospecto;
+- fundo amarelo #EAB81C: Pago, Em espera;
+- fundo turquesa escura #1F7A82 com texto branco: Admitido, Activa, Na mesa;
+- texto carmim sobre branco, com contorno: Cancelado, Encerrada, Desaparecido.
+
+Texto sobre turquesa e amarelo sempre azul-marinho.
+
+### 17.6 Regras de construção
+- **O ficheiro público só pode diminuir.** O admin inteiro carrega com `React.lazy` a partir de `App.jsx`: o painel, o login, o `Admin.css` e os módulos saem do ficheiro da página pública.
+- Ficheiros: `src/admin/mesa.css` (CSS partilhado da apresentação); `src/admin/mesa/` com os componentes comuns, só de apresentação: `Cabecalho.jsx`, `BarraNumeros.jsx`, `Mesa.jsx`, `ListaMesa.jsx`, `FichaCartao.jsx`, `Dados.jsx`, `Accoes.jsx`, `Pilula.jsx`. O `Admin.css` fica com o que é do painel do RCP; os CSS dos módulos perdem o que passa para o partilhado.
+- Tipografia e cores só as do manual: Rajdhani e Montserrat (já carregadas do Google Fonts), azul-marinho para todo o texto corrido, cinzento #828487 só em notas e rótulos, turquesa escura nas ligações. Sem sombras, gradientes nem ícones novos. Sem dependências novas.

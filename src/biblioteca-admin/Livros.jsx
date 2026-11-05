@@ -16,7 +16,7 @@ function corresponde(livro, pesquisa, estado) {
   )
 }
 
-// Lista dos livros, no fim do separador RCP.
+// Lista dos livros, no separador Biblioteca.
 export default function Livros({ onAbrir, onNovo }) {
   const [livros, setLivros] = useState(null)
   const [erro, setErro] = useState(false)
