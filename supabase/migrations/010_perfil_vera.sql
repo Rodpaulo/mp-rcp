@@ -1,4 +1,10 @@
 -- =====================================================================
+-- !!! NÃO APLICAR !!!
+-- Esta migração não foi corrida e não deve ser corrida. Os perfis da Vera e
+-- da Patrícia (Patrícia Marques) entraram à mão, por insert no SQL Editor.
+-- A direcção tem quatro contas no admin: Ana, Miguel, Patrícia, Vera.
+-- O ficheiro fica só como registo (SPEC 16.11 e 16.13).
+-- =====================================================================
 -- Matinés Pensantes · PWA RCP · migração 010 · perfil da Vera
 -- Ver SPEC.md, secções 14.5 e 16.11. Correr uma vez no SQL Editor do Supabase,
 -- depois de criar a conta da Vera em Authentication → Users.

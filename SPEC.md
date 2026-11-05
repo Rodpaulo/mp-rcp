@@ -352,7 +352,7 @@ Este módulo afasta-se de três regras anteriores, e só nisto:
 - **§14.4** ("envio de email a partir da aplicação; gestão de quotas e pagamentos" fora do Rede): passam a existir, mas neste módulo, não no Rede.
 
 ### 16.2 Finalidade
-Levar cada pessoa do pedido de adesão até associado com as quotas em dia, com o mínimo de trabalho humano: a direcção só confirma pagamentos, admite e regista recibos; tudo o resto (instruções de pagamento, lembretes, boas-vindas, aniversários, renovações) sai sozinho. Usam-no o Miguel (tesoureiro), a Ana e a Vera, com tudo visível para os três.
+Levar cada pessoa do pedido de adesão até associado com as quotas em dia, com o mínimo de trabalho humano: a direcção só confirma pagamentos, admite e regista recibos; tudo o resto (instruções de pagamento, lembretes, boas-vindas, aniversários, renovações) sai sozinho. Usam-no as quatro contas da direcção no admin: Ana, Miguel (tesoureiro), Patrícia (Patrícia Marques) e Vera, com tudo visível para as quatro.
 
 ### 16.3 Circuito
 - **Entrada única**: o formulário "Pedido de adesão" no Tally (`https://tally.so/r/BEaMqN`). Cada submissão chega por webhook à Edge Function `tally-webhook`, que cria o pedido. A folha Google do Tally deixa de ser instrumento de seguimento; fica só como cópia.
@@ -463,7 +463,7 @@ Regras:
 - `tally-webhook` só aceita pedidos com a assinatura do Tally válida (cabeçalho `Tally-Signature`, HMAC-SHA256 do corpo com o segredo de assinatura, em base64). Responde 200 a tudo o que aceitou, incluindo repetições; 401 sem assinatura válida; 500 se não conseguiu gravar o pedido (o Tally volta a tentar).
 - `associados-diario` só corre com o cabeçalho `x-cron-secret` igual a `CRON_SECRET`. O `pg_cron` lê o segredo e o endereço do projecto do Vault da Supabase; nada disso fica em ficheiros versionados.
 - As duas funções correm sem verificação de JWT da Supabase (o Tally e o `pg_net` não têm sessão); a protecção está na assinatura e no segredo.
-- A Vera entra com conta própria no Supabase Auth, criada à mão, e com a sua linha em `perfis` (migração à parte).
+- A direcção tem quatro contas no Supabase Auth, criadas à mão: Ana, Miguel, Patrícia e Vera, todas administradoras e cada uma com a sua linha em `perfis`. As linhas da Vera e da Patrícia entraram à mão, por `insert` no SQL Editor; a migração 010 não foi corrida e está marcada "não aplicar" (§16.13).
 
 ### 16.12 Pontos em aberto
 - O que acontece ao pedido aos 90 dias (`{consequencia_90_dias}`); até lá, o email 8 não sai e não há cancelamento automático.
@@ -474,7 +474,7 @@ Regras:
 - O gesto "admitir": decidido a 5 de Novembro de 2026, função `admitir_pedido` na migração 011 (§16.15).
 
 ### 16.13 Regras de construção
-- **Migração 008 aditiva**: só cria tabelas, índices, políticas e dados iniciais das tabelas novas. As chaves estrangeiras para `contactos` e `perfis` são novas e vivem nas tabelas novas; nenhuma coluna, restrição, política, vista ou função existente muda. O `pg_cron` fica numa migração à parte (009), a correr depois de as funções estarem publicadas; a linha da Vera em `perfis` noutra (010), depois de criada a conta.
+- **Migração 008 aditiva**: só cria tabelas, índices, políticas e dados iniciais das tabelas novas. As chaves estrangeiras para `contactos` e `perfis` são novas e vivem nas tabelas novas; nenhuma coluna, restrição, política, vista ou função existente muda. O `pg_cron` fica numa migração à parte (009), a correr depois de as funções estarem publicadas; a 010 (linha da Vera em `perfis`) **não se aplica**: não foi corrida, porque os perfis da Vera e da Patrícia entraram à mão; o ficheiro fica no repositório, marcado no cabeçalho, só como registo.
 - Funções em `supabase/functions/` (JavaScript para Deno): `tally-webhook/index.js`, `associados-diario/index.js` e o módulo comum `_shared/emails.js` (preencher campos, datas, chamar o Resend, registar). Sem SDK do Resend: a chamada é um `fetch`. A única biblioteca é a `@supabase/supabase-js`, a mesma da aplicação. `supabase/config.toml` só diz às funções onde está o ficheiro de entrada e que não verificam JWT.
 - A função diária só trabalha quando são 9 horas em Bruxelas (o `pg_cron` chama-a às 07:00 e às 08:00 UTC; uma das duas cai sempre nas 9 horas, de Verão ou de Inverno); `{"forcar": true}` no corpo faz correr a qualquer hora, para testes. Devolve um resumo do que enviou, do que falhou e porquê.
 - Ecrãs: separador Associados em `/admin` (`?s=associados`), com `React.lazy`, como o Rede (§16.15).
