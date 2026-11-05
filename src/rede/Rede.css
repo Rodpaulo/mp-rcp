@@ -1,10 +1,5 @@
 /* Rede: só o que falta às classes do admin (Admin.css). Carrega com o módulo, nunca na página pública. */
 
-.rede-filtros {
-  display: grid;
-  gap: 0 1rem;
-}
-
 .rede-select,
 .rede-notas {
   min-height: 44px;
@@ -22,90 +17,6 @@
   display: block;
   width: 100%;
   resize: vertical;
-}
-
-.rede-contagem {
-  margin: 0 0 0.5rem;
-  font-size: 0.875rem;
-}
-
-.rede-lista {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.rede-lista li {
-  border-bottom: 1px solid #D5DCE2;
-}
-
-.rede-linha {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  width: 100%;
-  padding: 0.75rem 0.25rem;
-  font: inherit;
-  text-align: left;
-  color: var(--navy);
-  background: none;
-  border: 0;
-  cursor: pointer;
-}
-
-.rede-linha:hover,
-.rede-linha:focus-visible {
-  background: var(--background);
-}
-
-.rede-linha-nome {
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-.rede-linha-detalhe {
-  font-size: 0.875rem;
-}
-
-.rede-etiquetas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-}
-
-.rede-etiqueta,
-.rede-estado {
-  padding: 0.125rem 0.5rem;
-  font-size: 0.8125rem;
-  border-radius: 999px;
-}
-
-.rede-etiqueta {
-  background: var(--grey-light);
-}
-
-/* Texto navy sobre turquesa e amarelo, como manda o manual. */
-.rede-estado {
-  font-weight: 600;
-  border: 1px solid var(--navy);
-}
-
-.rede-estado-activa {
-  background: var(--turquoise);
-}
-
-.rede-estado-prospecto,
-.rede-estado-a_avaliar {
-  background: #fff;
-}
-
-.rede-estado-em_espera {
-  background: var(--yellow);
-}
-
-.rede-estado-encerrada {
-  background: var(--grey-light);
-  border-style: dashed;
 }
 
 .rede-form {
@@ -157,34 +68,6 @@
   font-size: 0.875rem;
 }
 
-/* ---------- Vistas: Contactos, Por rever, Acções em atraso ---------- */
-
-.rede-vistas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.rede-vista {
-  padding: 0.375rem 0.875rem;
-  font-weight: 600;
-  text-decoration: none;
-  color: var(--navy);
-  background: #fff;
-  border: 2px solid var(--navy);
-  border-radius: 999px;
-}
-
-.rede-vista[aria-current='page'] {
-  color: #fff;
-  background: var(--navy);
-}
-
-.rede-botao-lista {
-  margin-top: 0.5rem;
-}
-
 .rede-aviso-estado {
   margin: 0 0 1rem;
   padding: 0.5rem 0.75rem;
@@ -223,22 +106,6 @@
 .rede-endereco {
   overflow-wrap: anywhere;
   user-select: all;
-}
-
-.rede-dados {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.25rem 1rem;
-  margin: 1rem 0;
-}
-
-.rede-dados dt {
-  font-weight: 600;
-}
-
-.rede-dados dd {
-  margin: 0;
-  overflow-wrap: anywhere;
 }
 
 .rede-texto {
@@ -287,23 +154,6 @@
 .rede-historico-pe {
   margin: 0;
   font-size: 0.875rem;
-}
-
-.rede-botao-perigo {
-  min-height: 40px;
-  padding: 0.5rem 1rem;
-  font: inherit;
-  font-weight: 600;
-  color: #A3262A;
-  background: #fff;
-  border: 2px solid #A3262A;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.rede-botao-perigo:disabled {
-  opacity: 0.6;
-  cursor: default;
 }
 
 /* ---------- Formulários de interacção e revisão ---------- */
@@ -367,9 +217,5 @@
 @media (min-width: 48rem) {
   .rede-botoes-escolha {
     grid-template-columns: repeat(3, 1fr);
-  }
-
-  .rede-filtros {
-    grid-template-columns: 2fr 1fr 1fr;
   }
 }

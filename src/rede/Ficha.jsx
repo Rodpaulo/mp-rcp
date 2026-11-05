@@ -13,6 +13,10 @@ import {
   obterPessoa,
 } from './api.js'
 import { CANAIS, DECISOES, ESTADOS, ETIQUETAS, TIPOS, rotulo } from './listas.js'
+import Accoes from '../admin/mesa/Accoes.jsx'
+import Dados from '../admin/mesa/Dados.jsx'
+import FichaCartao from '../admin/mesa/FichaCartao.jsx'
+import Pilula from '../admin/mesa/Pilula.jsx'
 import AccaoAberta from './AccaoAberta.jsx'
 import CartaoContacto from './CartaoContacto.jsx'
 import Participacoes from './Participacoes.jsx'
@@ -127,20 +131,21 @@ export default function Ficha({ id, onLista, onAbrir, onModo, onApagado }) {
     }
   }
 
+  // No telemóvel a ficha ocupa o ecrã e "Voltar à lista" regressa à lista; ao lado da lista não aparece.
   const voltar = (
-    <button type="button" className="admin-button-secondary" onClick={onLista}>
+    <button type="button" className="mesa-voltar" onClick={onLista}>
       Voltar à lista
     </button>
   )
 
   if (erro || dados === null) {
     return (
-      <section className="admin-section">
+      <FichaCartao>
+        {voltar}
         <p className={erro ? 'admin-error' : undefined} role="alert">
           {erro ? LOAD_ERROR : 'Este contacto não existe.'}
         </p>
-        {voltar}
-      </section>
+      </FichaCartao>
     )
   }
 
@@ -152,87 +157,51 @@ export default function Ficha({ id, onLista, onAbrir, onModo, onApagado }) {
 
   return (
     <>
-      <section className="admin-section">
-        <div className="admin-section-head">
-          <h2>{contacto.nome}</h2>
-          {voltar}
+      {voltar}
+      <FichaCartao
+        sobretitulo={[rotulo(TIPOS, contacto.tipo_registo), ...contacto.etiquetas.map((valor) => rotulo(ETIQUETAS, valor))].join(' · ')}
+        nome={contacto.nome}
+      >
+        <div className="mesa-ficha-estado">
+          <Pilula estado={contacto.estado}>{rotulo(ESTADOS, contacto.estado)}</Pilula>
+          <CartaoContacto contactoId={id} cartao={contacto.cartao_trello} onMudou={mudarCartao} />
         </div>
 
-        <p className="rede-linha-detalhe">
-          {rotulo(TIPOS, contacto.tipo_registo)}
-          {organizacao && (
-            <>
-              {' · '}
-              <button type="button" className="rede-ligacao-texto" onClick={() => onAbrir(organizacao.id)}>
-                {organizacao.nome}
-              </button>
-            </>
-          )}
-          {contacto.cidade && ` · ${contacto.cidade}`}
-        </p>
-
-        <CartaoContacto contactoId={id} cartao={contacto.cartao_trello} onMudou={mudarCartao} />
-
-        <p className="rede-etiquetas">
-          <span className={`rede-estado rede-estado-${contacto.estado}`}>{rotulo(ESTADOS, contacto.estado)}</span>
-          {contacto.etiquetas.map((valor) => (
-            <span key={valor} className="rede-etiqueta">
-              {rotulo(ETIQUETAS, valor)}
-            </span>
-          ))}
-        </p>
-
-        <dl className="rede-dados">
-          <dt>Próxima revisão</dt>
-          <dd>{contacto.proxima_revisao ? porExtenso(contacto.proxima_revisao) : 'por marcar'}</dd>
-          {contacto.email && (
-            <>
-              <dt>Email</dt>
-              <dd>
-                <a href={`mailto:${contacto.email}`}>{contacto.email}</a>
-              </dd>
-            </>
-          )}
-          {contacto.telefone && (
-            <>
-              <dt>Telefone</dt>
-              <dd>
+        <Dados
+          itens={[
+            { rotulo: 'Próxima revisão', valor: contacto.proxima_revisao ? porExtenso(contacto.proxima_revisao) : 'por marcar' },
+            {
+              rotulo: 'Organização',
+              valor: organizacao && (
+                <button type="button" className="rede-ligacao-texto" onClick={() => onAbrir(organizacao.id)}>
+                  {organizacao.nome}
+                </button>
+              ),
+            },
+            { rotulo: 'Cidade', valor: contacto.cidade },
+            { rotulo: 'Email', valor: contacto.email && <a href={`mailto:${contacto.email}`}>{contacto.email}</a> },
+            {
+              rotulo: 'Telefone',
+              valor: contacto.telefone && (
                 <a href={`tel:${contacto.telefone.replace(/\s/g, '')}`}>{contacto.telefone}</a>
-              </dd>
-            </>
-          )}
-          {contacto.website && (
-            <>
-              <dt>Website</dt>
-              <dd>
+              ),
+            },
+            {
+              rotulo: 'Website',
+              valor: contacto.website && (
                 <a href={ligacaoWeb(contacto.website)} target="_blank" rel="noreferrer">
                   {contacto.website}
                 </a>
-              </dd>
-            </>
-          )}
-          {contacto.origem && (
-            <>
-              <dt>Origem</dt>
-              <dd>{contacto.origem}</dd>
-            </>
-          )}
-          {contacto.pedido_adesao_em && (
-            <>
-              <dt>Pedido de adesão</dt>
-              <dd>{porExtenso(contacto.pedido_adesao_em)}</dd>
-            </>
-          )}
-          {pessoa && (
-            <>
-              <dt>Registo do RCP</dt>
-              <dd>
-                {pessoa.email}
-                {presencas.length > 0 && ` · esteve no ${presencas.join(', ')}`}
-              </dd>
-            </>
-          )}
-        </dl>
+              ),
+            },
+            { rotulo: 'Origem', valor: contacto.origem },
+            { rotulo: 'Pedido de adesão', valor: contacto.pedido_adesao_em && porExtenso(contacto.pedido_adesao_em) },
+            {
+              rotulo: 'Registo do RCP',
+              valor: pessoa && `${pessoa.email}${presencas.length > 0 ? ` · esteve no ${presencas.join(', ')}` : ''}`,
+            },
+          ]}
+        />
 
         {contacto.notas && <p className="rede-texto">{contacto.notas}</p>}
 
@@ -251,20 +220,26 @@ export default function Ficha({ id, onLista, onAbrir, onModo, onApagado }) {
           </>
         )}
 
-        <div className="rede-accoes">
-          <button type="button" className="admin-button" onClick={() => onModo('interaccao')}>
+        <Accoes
+          saidas={
+            <button type="button" className="mesa-saida" onClick={handleApagar} disabled={aApagar}>
+              {aApagar ? 'Um momento…' : 'Apagar contacto'}
+            </button>
+          }
+        >
+          <button type="button" className="mesa-botao" onClick={() => onModo('interaccao')}>
             Registar interacção
           </button>
-          <button type="button" className="admin-button" onClick={() => onModo('revisao')}>
+          <button type="button" className="mesa-botao-secundario" onClick={() => onModo('revisao')}>
             Registar revisão
           </button>
-          <button type="button" className="admin-button-secondary" onClick={() => onModo('editar')}>
+          <button type="button" className="mesa-botao-secundario" onClick={() => onModo('editar')}>
             Editar
           </button>
-          <button type="button" className="admin-button-secondary" onClick={handleCopiar}>
+          <button type="button" className="mesa-botao-secundario" onClick={handleCopiar}>
             Copiar endereço da ficha
           </button>
-        </div>
+        </Accoes>
         {copia === 'feita' && (
           <p className="rede-aviso" role="status">
             Endereço copiado. Cola-o na descrição do cartão do Trello.
@@ -275,10 +250,14 @@ export default function Ficha({ id, onLista, onAbrir, onModo, onApagado }) {
             Não foi possível copiar. Copia à mão: <span className="rede-endereco">{enderecoFicha}</span>
           </p>
         )}
-      </section>
+        {erroApagar && (
+          <p className="admin-error" role="alert">
+            Não foi possível apagar. Tenta outra vez.
+          </p>
+        )}
+      </FichaCartao>
 
-      <section className="admin-section">
-        <h2>Histórico</h2>
+      <FichaCartao titulo="Histórico">
         {linhaDoTempo.length === 0 ? (
           <p>Ainda não há interacções nem revisões.</p>
         ) : (
@@ -317,22 +296,9 @@ export default function Ficha({ id, onLista, onAbrir, onModo, onApagado }) {
             )}
           </ol>
         )}
-      </section>
+      </FichaCartao>
 
       <Participacoes contactoId={id} />
-
-      <section className="admin-section">
-        <h2>Apagar contacto</h2>
-        <p>Apaga o contacto e todo o seu histórico: interacções, revisões e participações.</p>
-        {erroApagar && (
-          <p className="admin-error" role="alert">
-            Não foi possível apagar. Tenta outra vez.
-          </p>
-        )}
-        <button type="button" className="rede-botao-perigo" onClick={handleApagar} disabled={aApagar}>
-          {aApagar ? 'Um momento…' : 'Apagar contacto'}
-        </button>
-      </section>
     </>
   )
 }

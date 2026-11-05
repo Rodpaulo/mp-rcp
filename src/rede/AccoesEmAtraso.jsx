@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
+import { ItemMesa } from '../admin/mesa/ListaMesa.jsx'
 import { LOAD_ERROR, SAVE_ERROR } from '../admin/text.js'
 import { concluirAccao, listarAccoesEmAtraso } from './api.js'
 import { perguntaConcluir } from './accoes.js'
 import { hoje, porExtenso } from './datas.js'
 
 // Acções com prazo passado e não concluídas (vista rede_accoes_em_atraso), com "Concluir" na própria linha.
-export default function AccoesEmAtraso({ onAbrir }) {
+export default function AccoesEmAtraso({ aberto, recarga, onAbrir }) {
   const [accoes, setAccoes] = useState(null)
   const [erro, setErro] = useState('')
   const [aConcluir, setAConcluir] = useState(null)
@@ -21,7 +22,7 @@ export default function AccoesEmAtraso({ onAbrir }) {
 
   useEffect(() => {
     carregar()
-  }, [carregar])
+  }, [carregar, recarga])
 
   async function handleConcluir(accao) {
     if (!window.confirm(perguntaConcluir(accao))) return
@@ -39,8 +40,7 @@ export default function AccoesEmAtraso({ onAbrir }) {
   }
 
   return (
-    <section className="admin-section">
-      <h2>Acções em atraso</h2>
+    <>
       {erro && (
         <p className="admin-error" role="alert">
           {erro}
@@ -50,39 +50,37 @@ export default function AccoesEmAtraso({ onAbrir }) {
         (accoes.length === 0 ? (
           <p>Não há acções em atraso.</p>
         ) : (
-          <ul className="rede-historico">
+          <ul className="mesa-itens">
             {accoes.map((accao) => (
-              <li key={accao.id}>
-                <p className="rede-historico-cabeca">
-                  <button type="button" className="rede-ligacao-texto" onClick={() => onAbrir(accao.contacto_id)}>
-                    {accao.contacto_nome}
-                  </button>
-                </p>
+              <ItemMesa
+                key={accao.id}
+                aberto={accao.contacto_id === aberto}
+                onAbrir={() => onAbrir(accao.contacto_id)}
+                nome={accao.contacto_nome}
+                detalhe={
+                  `Prazo: ${porExtenso(accao.prazo)}` +
+                  (accao.responsavel_nome ? ` · a cargo de ${accao.responsavel_nome}` : '') +
+                  ` · revisão de ${porExtenso(accao.data)}`
+                }
+              >
                 <p className="rede-texto">{accao.accao}</p>
-                <p className="rede-historico-pe">
-                  Prazo: {porExtenso(accao.prazo)}
-                  {accao.responsavel_nome && ` · a cargo de ${accao.responsavel_nome}`}
-                  {` · revisão de ${porExtenso(accao.data)}`}
-                </p>
                 {accao.cartao_trello && (
-                  <p className="rede-historico-pe">
-                    <a href={accao.cartao_trello} target="_blank" rel="noreferrer">
-                      Abrir cartão
-                    </a>
-                  </p>
+                  <a href={accao.cartao_trello} target="_blank" rel="noreferrer" className="mesa-item-accao">
+                    Abrir cartão
+                  </a>
                 )}
                 <button
                   type="button"
-                  className="admin-button rede-botao-lista"
+                  className="mesa-item-accao"
                   onClick={() => handleConcluir(accao)}
                   disabled={aConcluir === accao.id}
                 >
                   {aConcluir === accao.id ? 'Um momento…' : 'Concluir'}
                 </button>
-              </li>
+              </ItemMesa>
             ))}
           </ul>
         ))}
-    </section>
+    </>
   )
 }

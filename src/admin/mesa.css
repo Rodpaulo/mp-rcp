@@ -194,3 +194,397 @@
     padding-top: 1.25rem;
   }
 }
+
+/* ---------- Mesa de trabalho (SPEC 17.4) ---------- */
+
+.mesa {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+/* Telemóvel: sem item aberto, só a lista; com item aberto, só a ficha. */
+.mesa:not(.mesa-aberta) .mesa-coluna-ficha,
+.mesa-aberta .mesa-coluna-lista {
+  display: none;
+}
+
+.mesa-coluna-ficha {
+  min-width: 0;
+}
+
+.mesa-lista,
+.mesa-cartao,
+.mesa-coluna-ficha .admin-section {
+  margin: 0 0 1rem;
+  padding: 1rem;
+  background: #fff;
+  border: 0;
+  border-radius: 10px;
+}
+
+.mesa-lista-cabeca {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.mesa-app .mesa-lista-cabeca h2,
+.mesa-app .mesa-cartao-titulo,
+.mesa-coluna-ficha .admin-section h2 {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-title);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.mesa-coluna-ficha .admin-section-head h2,
+.mesa-app .mesa-lista-cabeca h2 {
+  margin: 0;
+}
+
+.mesa-pesquisa {
+  margin-bottom: 0.75rem;
+}
+
+.mesa-pesquisa input,
+.mesa-pesquisa select {
+  width: 100%;
+}
+
+/* Pílulas de filtro: Rajdhani 600 12 px, maiúsculas. */
+.mesa-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-bottom: 0.75rem;
+}
+
+.mesa-filtro {
+  min-height: 32px;
+  padding: 0 0.75rem;
+  font-family: var(--font-title);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--navy);
+  background: #fff;
+  border: 1px solid var(--navy);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.mesa-filtro[aria-pressed='true'] {
+  color: #fff;
+  background: var(--navy);
+}
+
+.mesa-contagem {
+  margin: 0 0 0.5rem;
+  font-size: 12px;
+  color: var(--mesa-cinzento);
+}
+
+.mesa-itens {
+  margin: 0 -1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.mesa-item {
+  border-top: 1px solid var(--grey-light);
+  border-left: 4px solid transparent;
+}
+
+.mesa-item[aria-current='true'] {
+  background: var(--grey-light);
+  border-left-color: var(--carmine);
+}
+
+.mesa-item-linha {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.125rem 0.5rem;
+  align-items: start;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.625rem 1rem 0.625rem 0.75rem;
+  font: inherit;
+  text-align: left;
+  color: var(--navy);
+  background: none;
+  border: 0;
+}
+
+button.mesa-item-linha {
+  cursor: pointer;
+}
+
+button.mesa-item-linha:hover {
+  background: var(--grey-light);
+}
+
+.mesa-item-nome {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.mesa-item-detalhe {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--mesa-cinzento);
+  overflow-wrap: anywhere;
+}
+
+.mesa-item-extra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+  align-items: center;
+  padding: 0 1rem 0.25rem 0.75rem;
+}
+
+.mesa-item-extra .rede-texto {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 14px;
+}
+
+.mesa-item-accao {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--turquoise-dark);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.mesa-item-accao:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Pílulas de estado (SPEC 17.5). Texto azul-marinho sobre turquesa e amarelo. */
+.mesa-pilula {
+  display: inline-block;
+  padding: 0.125rem 0.625rem;
+  font-family: var(--font-title);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--navy);
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+
+.mesa-pilula-neutro {
+  background: var(--grey-light);
+}
+
+/* No item aberto o fundo já é cinzento claro: a pílula neutra passa a branco para se ver. */
+.mesa-item[aria-current='true'] .mesa-pilula-neutro {
+  background: #fff;
+}
+
+.mesa-pilula-turquesa {
+  background: var(--turquoise);
+}
+
+.mesa-pilula-amarelo {
+  background: var(--yellow);
+}
+
+.mesa-pilula-forte {
+  color: #fff;
+  background: var(--turquoise-dark);
+}
+
+.mesa-pilula-fim {
+  color: var(--carmine);
+  background: #fff;
+  border-color: var(--carmine);
+}
+
+/* ---------- Ficha ---------- */
+
+.mesa-sobretitulo {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-title);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--carmine);
+}
+
+.mesa-app .mesa-nome {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-title);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.mesa-ficha-estado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.mesa-ficha-estado > * {
+  margin: 0;
+}
+
+.mesa-ficha-estado form {
+  flex-basis: 100%;
+}
+
+.mesa-dados {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+  margin: 1rem 0;
+}
+
+.mesa-dados dt {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mesa-cinzento);
+}
+
+.mesa-dados dd {
+  margin: 0.125rem 0 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.mesa-accoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.25rem;
+}
+
+.mesa-accoes-principais {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Botões da mesa: o principal carmim, os secundários com contorno turquesa escura.
+   Os formulários dos módulos, abertos na coluna da ficha, seguem as mesmas cores. */
+.mesa-botao,
+.mesa-botao-secundario,
+.mesa-coluna-ficha .admin-button,
+.mesa-coluna-ficha .admin-button-secondary {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.mesa-botao,
+.mesa-coluna-ficha .admin-button {
+  color: #fff;
+  background: var(--carmine);
+  border: 2px solid var(--carmine);
+}
+
+.mesa-botao-secundario,
+.mesa-coluna-ficha .admin-button-secondary {
+  color: var(--turquoise-dark);
+  background: #fff;
+  border: 2px solid var(--turquoise-dark);
+}
+
+.mesa-botao:disabled,
+.mesa-botao-secundario:disabled,
+.mesa-saida:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.mesa-saida,
+.mesa-voltar {
+  min-height: 44px;
+  padding: 0;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.mesa-saida {
+  font-size: 14px;
+  color: var(--mesa-cinzento);
+}
+
+.mesa-voltar {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--turquoise-dark);
+}
+
+.mesa-vazio {
+  margin: 0;
+  color: var(--mesa-cinzento);
+}
+
+.mesa-filtro:focus-visible,
+.mesa-item-linha:focus-visible,
+.mesa-item-accao:focus-visible,
+.mesa-botao:focus-visible,
+.mesa-botao-secundario:focus-visible,
+.mesa-saida:focus-visible,
+.mesa-voltar:focus-visible {
+  outline: 3px solid var(--turquoise-dark);
+  outline-offset: 2px;
+}
+
+@media (min-width: 48rem) {
+  .mesa-dados {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Lado a lado a partir de 64rem: lista com 340 a 380 px, ficha no resto. */
+@media (min-width: 64rem) {
+  .mesa {
+    grid-template-columns: clamp(340px, 30%, 380px) minmax(0, 1fr);
+    gap: 1.25rem;
+  }
+
+  .mesa:not(.mesa-aberta) .mesa-coluna-ficha,
+  .mesa-aberta .mesa-coluna-lista {
+    display: block;
+  }
+
+  .mesa-voltar {
+    display: none;
+  }
+}

@@ -553,6 +553,9 @@ Quatro cartões brancos sobre fundo cinzento claro (#EDEDED): número em Rajdhan
 - Coluna da direita com a ficha em cartões brancos: sobretítulo em carmim (Rajdhani 600 12 px, espaçado), nome em Rajdhani 700 32 px, dados em grelha de três colunas (rótulo 11 px cinzento em maiúsculas, valor 600), linha de acções com o botão principal carmim (#C01C36, texto branco) e os secundários com contorno turquesa escura (#1F7A82); as saídas (encerrar, apagar) em texto cinzento, alinhadas à direita. Cartões seguintes para histórico, emails, participações, quotas.
 - No telemóvel, empilham-se: a lista primeiro; ao abrir um item, a ficha ocupa o ecrã e "Voltar" regressa à lista.
 - Aplica-se ao Rede (contactos e ficha; as vistas Por rever, Em atraso e Interessados passam a pílulas da coluna da lista), aos Associados (pedidos e associados; Emails-tipo, Emails enviados e Configuração em largura total) e à Biblioteca (livros e ficha).
+- Lado a lado a partir de 64rem (1024 px); abaixo disso empilha-se como no telemóvel. Sem item aberto, a coluna da ficha mostra "Escolhe um contacto na lista.".
+- Rede: na vista Contactos, a pesquisa e o estado em pílulas (Todos e os cinco estados); a etiqueta fica numa lista de escolha, por serem oito. As etiquetas passam para a linha secundária do item e para o sobretítulo da ficha. Abrir ou fechar um contacto mantém os parâmetros da lista (`v`, `q`, `e`, `st`), para a lista não mudar ao lado da ficha; a lista lê de novo ao abrir, gravar ou fechar um contacto. As acções da própria linha ficam: "Registar revisão" (Por rever), "Abrir cartão" e "Concluir" (Em atraso), "Criar contacto" (Interessados). "Apagar contacto" passa a saída da linha de acções da ficha, com a mesma confirmação.
+- Os formulários abertos na coluna da ficha (contacto, interacção, revisão) mantêm-se; só os botões tomam as cores da mesa.
 
 ### 17.5 Pílulas de estado
 Um só mapa de estado para cor, para os três módulos:

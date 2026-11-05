@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
+import { ItemMesa } from '../admin/mesa/ListaMesa.jsx'
 import { LOAD_ERROR, SAVE_ERROR } from '../admin/text.js'
 import { criarContacto, listarInteressados } from './api.js'
 import { diaLocal, porExtenso } from './datas.js'
 
 // Quem pediu, na página de entrada, para ser contactado sobre a adesão. people só se lê;
 // "Criar contacto" escreve só em contactos.
-export default function Interessados({ onAbrir }) {
+export default function Interessados({ aberto, recarga, onAbrir }) {
   const [pessoas, setPessoas] = useState(null)
   const [erro, setErro] = useState('')
   const [aCriar, setACriar] = useState(null)
@@ -21,7 +22,7 @@ export default function Interessados({ onAbrir }) {
 
   useEffect(() => {
     carregar()
-  }, [carregar])
+  }, [carregar, recarga])
 
   async function handleCriar(pessoa) {
     setACriar(pessoa.id)
@@ -41,13 +42,14 @@ export default function Interessados({ onAbrir }) {
     } catch (error) {
       console.error('criar contacto falhou:', error)
       setErro(SAVE_ERROR)
+    } finally {
       setACriar(null)
     }
   }
 
   return (
-    <section className="admin-section">
-      <h2>Interessados em ser associados</h2>
+    <>
+      <p className="mesa-contagem">Interessados em ser associados</p>
       {erro && (
         <p className="admin-error" role="alert">
           {erro}
@@ -57,37 +59,32 @@ export default function Interessados({ onAbrir }) {
         (pessoas.length === 0 ? (
           <p>Ainda ninguém pediu para ser contactado.</p>
         ) : (
-          <ul className="rede-historico">
+          <ul className="mesa-itens">
             {pessoas.map((pessoa) => (
-              <li key={pessoa.id}>
-                <p className="rede-historico-cabeca">{pessoa.name || 'Sem nome'}</p>
-                <p className="rede-texto">{pessoa.email}</p>
-                <p className="rede-historico-pe">
-                  Pediu a {porExtenso(diaLocal(pessoa.associado_interesse_at))}
-                  {pessoa.contacto_id ? ' · já tem contacto no Rede' : ' · ainda sem contacto no Rede'}
-                </p>
-                {pessoa.contacto_id ? (
+              <ItemMesa
+                key={pessoa.id}
+                aberto={Boolean(pessoa.contacto_id) && pessoa.contacto_id === aberto}
+                onAbrir={pessoa.contacto_id ? () => onAbrir(pessoa.contacto_id) : undefined}
+                nome={pessoa.name || 'Sem nome'}
+                detalhe={
+                  `${pessoa.email} · pediu a ${porExtenso(diaLocal(pessoa.associado_interesse_at))}` +
+                  (pessoa.contacto_id ? ' · já tem contacto no Rede' : ' · ainda sem contacto no Rede')
+                }
+              >
+                {!pessoa.contacto_id && (
                   <button
                     type="button"
-                    className="admin-button-secondary rede-botao-lista"
-                    onClick={() => onAbrir(pessoa.contacto_id)}
-                  >
-                    Abrir contacto
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="admin-button rede-botao-lista"
+                    className="mesa-item-accao"
                     onClick={() => handleCriar(pessoa)}
                     disabled={aCriar === pessoa.id}
                   >
                     {aCriar === pessoa.id ? 'Um momento…' : 'Criar contacto'}
                   </button>
                 )}
-              </li>
+              </ItemMesa>
             ))}
           </ul>
         ))}
-    </section>
+    </>
   )
 }
