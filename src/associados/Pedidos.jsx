@@ -65,7 +65,7 @@ export default function Pedidos({ aberto, recarga, onAbrir }) {
     <ListaMesa
       titulo="Pedidos de adesão"
       accao={
-        <button type="button" className="mesa-ligacao" onClick={() => onAbrir('novo')}>
+        <button type="button" className="mesa-botao-discreto" onClick={() => onAbrir('novo')}>
           Criar pedido à mão
         </button>
       }

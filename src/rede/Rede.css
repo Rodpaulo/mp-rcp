@@ -209,9 +209,10 @@
   border-top: 1px solid #D5DCE2;
 }
 
-.rede-gravar .admin-button {
-  width: 100%;
-  min-height: 52px;
+@media (max-width: 47.99rem) {
+  .rede-gravar .admin-button {
+    width: 100%;
+  }
 }
 
 @media (min-width: 48rem) {

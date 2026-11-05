@@ -197,9 +197,10 @@ ul.assoc-nota {
   border-top: 1px solid #D5DCE2;
 }
 
-.assoc-gravar .admin-button {
-  width: 100%;
-  min-height: 52px;
+@media (max-width: 47.99rem) {
+  .assoc-gravar .admin-button {
+    width: 100%;
+  }
 }
 
 /* ---------- Emails-tipo ---------- */

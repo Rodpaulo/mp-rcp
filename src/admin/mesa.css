@@ -334,23 +334,7 @@
   border-bottom-color: var(--carmine);
 }
 
-/* Acção discreta ao lado do título da lista (uma excepção, como criar um pedido à mão). */
-.mesa-ligacao {
-  min-height: 44px;
-  padding: 0;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--turquoise-dark);
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
-  background: none;
-  border: 0;
-  cursor: pointer;
-}
-
-.mesa-vista:focus-visible,
-.mesa-ligacao:focus-visible {
+.mesa-vista:focus-visible {
   outline: 3px solid var(--turquoise-dark);
   outline-offset: 2px;
 }
@@ -571,20 +555,36 @@ button.mesa-item-linha:hover {
   gap: 0.5rem;
 }
 
-/* Botões da mesa: o principal carmim, os secundários com contorno turquesa escura.
-   Os formulários dos módulos, abertos na coluna da ficha, seguem as mesmas cores. */
+/* Todos os botões do admin com o mesmo tamanho: 44 px de altura, Montserrat 600 a 14 px.
+   As cores: o principal carmim, o secundário com contorno turquesa escura, o discreto com contorno cinzento.
+   Os formulários dos módulos, abertos na coluna da ficha ou em largura total, seguem as mesmas cores. */
 .mesa-botao,
 .mesa-botao-secundario,
-.mesa-coluna-ficha .admin-button,
-.mesa-largo .admin-button,
-.mesa-coluna-ficha .admin-button-secondary,
-.mesa-largo .admin-button-secondary {
+.mesa-botao-discreto,
+.mesa-app .admin-button,
+.mesa-app .admin-button-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 44px;
-  padding: 0.5rem 1rem;
-  font: inherit;
+  padding: 0 1rem;
+  font-family: var(--font-text);
+  font-size: 14px;
   font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
   border-radius: 6px;
   cursor: pointer;
+}
+
+.mesa-botao-discreto {
+  color: var(--navy);
+  background: #fff;
+  border: 2px solid var(--mesa-linha);
+}
+
+.mesa-botao-discreto:hover {
+  border-color: var(--navy);
 }
 
 .mesa-botao,
@@ -605,6 +605,7 @@ button.mesa-item-linha:hover {
 
 .mesa-botao:disabled,
 .mesa-botao-secundario:disabled,
+.mesa-botao-discreto:disabled,
 .mesa-saida:disabled {
   opacity: 0.6;
   cursor: default;
@@ -643,6 +644,7 @@ button.mesa-item-linha:hover {
 .mesa-item-accao:focus-visible,
 .mesa-botao:focus-visible,
 .mesa-botao-secundario:focus-visible,
+.mesa-botao-discreto:focus-visible,
 .mesa-saida:focus-visible,
 .mesa-voltar:focus-visible {
   outline: 3px solid var(--turquoise-dark);
