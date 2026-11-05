@@ -1,52 +1,8 @@
 /* Associados: só o que falta às classes do admin (Admin.css). Carrega com o módulo, nunca na página pública.
    Mesma linguagem do Rede: navy sobre branco, turquesa e amarelo só como fundo, nunca texto branco por cima. */
 
-/* ---------- Vistas e filtros ---------- */
-
-.assoc-vistas,
-.assoc-filtros {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.assoc-vista,
-.assoc-filtro {
-  padding: 0.375rem 0.875rem;
-  font: inherit;
-  font-weight: 600;
-  text-decoration: none;
-  color: var(--navy);
-  background: #fff;
-  border: 2px solid var(--navy);
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.assoc-vista[aria-current='page'],
-.assoc-filtro[aria-pressed='true'] {
-  color: #fff;
-  background: var(--navy);
-}
-
-.assoc-filtro {
-  padding: 0.25rem 0.75rem;
-  font-size: 0.875rem;
-}
-
-.assoc-filtro-n {
-  font-weight: normal;
-}
-
-.assoc-contagem {
-  margin: 0 0 0.5rem;
-  font-size: 0.875rem;
-}
-
 /* ---------- Listas ---------- */
 
-.assoc-lista,
 .assoc-envios,
 .assoc-quotas {
   margin: 0;
@@ -54,93 +10,21 @@
   list-style: none;
 }
 
-.assoc-lista li,
-.assoc-quotas li {
-  border-bottom: 1px solid #D5DCE2;
-}
-
 .assoc-quotas li {
   padding: 0.75rem 0;
-}
-
-.assoc-linha {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  width: 100%;
-  padding: 0.75rem 0.25rem;
-  font: inherit;
-  text-align: left;
-  color: var(--navy);
-  background: none;
-  border: 0;
-  cursor: pointer;
-}
-
-.assoc-linha:hover,
-.assoc-linha:focus-visible {
-  background: var(--background);
-}
-
-.assoc-linha-nome,
-.assoc-quota-cabeca {
-  font-weight: 600;
-  overflow-wrap: anywhere;
+  border-bottom: 1px solid #D5DCE2;
 }
 
 .assoc-quota-cabeca {
   margin: 0 0 0.25rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .assoc-linha-detalhe {
   font-size: 0.875rem;
   font-weight: normal;
   overflow-wrap: anywhere;
-}
-
-.assoc-tabela td {
-  vertical-align: top;
-}
-
-/* ---------- Estados ---------- */
-
-.assoc-estado {
-  display: inline-block;
-  padding: 0.125rem 0.5rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--navy);
-  background: #fff;
-  border: 1px solid var(--navy);
-  border-radius: 999px;
-}
-
-.assoc-estado-instrucoes_enviadas,
-.assoc-envio-auto {
-  background: var(--grey-light);
-}
-
-.assoc-estado-pago,
-.assoc-envio-estado-a_enviar {
-  background: var(--yellow);
-}
-
-.assoc-estado-admitido,
-.assoc-envio-estado-enviado {
-  background: var(--turquoise);
-}
-
-.assoc-estado-desistiu,
-.assoc-estado-nao_admitido,
-.assoc-estado-cancelado {
-  background: var(--grey-light);
-  border-style: dashed;
-}
-
-.assoc-envio-estado-falhou {
-  color: #fff;
-  background: #A3262A;
-  border-color: #A3262A;
 }
 
 /* ---------- Envios ---------- */
@@ -181,22 +65,6 @@
 }
 
 /* ---------- Fichas ---------- */
-
-.assoc-dados {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.25rem 1rem;
-  margin: 1rem 0;
-}
-
-.assoc-dados dt {
-  font-weight: 600;
-}
-
-.assoc-dados dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
 
 .assoc-texto {
   margin: 0 0 0.5rem;

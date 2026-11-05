@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { formatDate, formatTime } from '../admin/text.js'
 import { dataBruxelas } from '../../supabase/functions/_shared/campos.js'
 import { libertarEnvio } from './api.js'
+import Pilula from '../admin/mesa/Pilula.jsx'
 import { ESTADOS_ENVIO, numeroEmail, rotulo } from './textos.js'
 
 const DEZ_MINUTOS = 10 * 60 * 1000
@@ -45,7 +46,7 @@ export default function Envios({ envios, destino, onMudou }) {
         {envios.map((e) => (
           <li key={e.id} className={`assoc-envio assoc-envio-${e.estado}`}>
             <p className="assoc-envio-cabeca">
-              <span className={`assoc-estado assoc-envio-estado-${e.estado}`}>{rotulo(ESTADOS_ENVIO, e.estado)}</span>{' '}
+              <Pilula estado={e.estado}>{rotulo(ESTADOS_ENVIO, e.estado)}</Pilula>{' '}
               Email {numeroEmail(e.email_tipo)}
               {e.periodo && ` (${e.periodo})`} · {quando(e.enviado_em)}
             </p>

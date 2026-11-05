@@ -215,7 +215,8 @@
 
 .mesa-lista,
 .mesa-cartao,
-.mesa-coluna-ficha .admin-section {
+.mesa-coluna-ficha .admin-section,
+.mesa-largo .admin-section {
   margin: 0 0 1rem;
   padding: 1rem;
   background: #fff;
@@ -234,7 +235,8 @@
 
 .mesa-app .mesa-lista-cabeca h2,
 .mesa-app .mesa-cartao-titulo,
-.mesa-coluna-ficha .admin-section h2 {
+.mesa-coluna-ficha .admin-section h2,
+.mesa-largo .admin-section h2 {
   margin: 0 0 0.75rem;
   font-family: var(--font-title);
   font-size: 22px;
@@ -243,6 +245,7 @@
 }
 
 .mesa-coluna-ficha .admin-section-head h2,
+.mesa-largo .admin-section-head h2,
 .mesa-app .mesa-lista-cabeca h2 {
   margin: 0;
 }
@@ -282,6 +285,19 @@
 .mesa-filtro[aria-pressed='true'] {
   color: #fff;
   background: var(--navy);
+}
+
+/* Número ao lado do rótulo da pílula (pedidos por estado). */
+.mesa-filtro-n {
+  font-weight: 400;
+}
+
+/* Mais de uma pílula no mesmo item (Emails-tipo: manual ou automático, inactivo). */
+.mesa-pilulas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: flex-end;
 }
 
 .mesa-contagem {
@@ -497,7 +513,9 @@ button.mesa-item-linha:hover {
 .mesa-botao,
 .mesa-botao-secundario,
 .mesa-coluna-ficha .admin-button,
-.mesa-coluna-ficha .admin-button-secondary {
+.mesa-largo .admin-button,
+.mesa-coluna-ficha .admin-button-secondary,
+.mesa-largo .admin-button-secondary {
   min-height: 44px;
   padding: 0.5rem 1rem;
   font: inherit;
@@ -507,14 +525,16 @@ button.mesa-item-linha:hover {
 }
 
 .mesa-botao,
-.mesa-coluna-ficha .admin-button {
+.mesa-coluna-ficha .admin-button,
+.mesa-largo .admin-button {
   color: #fff;
   background: var(--carmine);
   border: 2px solid var(--carmine);
 }
 
 .mesa-botao-secundario,
-.mesa-coluna-ficha .admin-button-secondary {
+.mesa-coluna-ficha .admin-button-secondary,
+.mesa-largo .admin-button-secondary {
   color: var(--turquoise-dark);
   background: #fff;
   border: 2px solid var(--turquoise-dark);

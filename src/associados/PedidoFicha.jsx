@@ -16,6 +16,10 @@ import {
 } from './api.js'
 import Envios from './Envios.jsx'
 import { ESTADOS_PEDIDO, SAIDAS, TIPOS_ASSOCIADO, rotulo } from './textos.js'
+import Accoes from '../admin/mesa/Accoes.jsx'
+import Dados from '../admin/mesa/Dados.jsx'
+import FichaCartao from '../admin/mesa/FichaCartao.jsx'
+import Pilula from '../admin/mesa/Pilula.jsx'
 
 async function carregar(id) {
   const pedido = await obterPedido(id)
@@ -139,7 +143,8 @@ function Admitir({ pedido, config, onFeito }) {
 }
 
 // Saídas: desistiu, não admitido, cancelado, sempre com nota.
-function Saida({ pedido, onFeito }) {
+// Abre a partir de "Encerrar o pedido", nas saídas da ficha (SPEC 17.4).
+function Saida({ pedido, onFeito, onCancelar }) {
   const [estado, setEstado] = useState('')
   const [nota, setNota] = useState('')
   const [aGravar, setAGravar] = useState(false)
@@ -185,9 +190,14 @@ function Saida({ pedido, onFeito }) {
           {erro}
         </p>
       )}
-      <button type="submit" className="admin-button-secondary" disabled={aGravar}>
-        {aGravar ? 'Um momento…' : 'Encerrar o pedido'}
-      </button>
+      <div className="assoc-accoes">
+        <button type="submit" className="admin-button-secondary" disabled={aGravar}>
+          {aGravar ? 'Um momento…' : 'Encerrar o pedido'}
+        </button>
+        <button type="button" className="mesa-saida" onClick={onCancelar}>
+          Cancelar
+        </button>
+      </div>
     </form>
   )
 }
@@ -196,6 +206,7 @@ export default function PedidoFicha({ id, onLista, onAbrirAssociado }) {
   const [dados, setDados] = useState(undefined) // undefined: a carregar; null: não existe
   const [erro, setErro] = useState(false)
   const [aviso, setAviso] = useState('')
+  const [aEncerrar, setAEncerrar] = useState(false)
 
   const recarregar = useCallback(() => {
     return carregar(id).then(setDados, (error) => {
@@ -208,20 +219,21 @@ export default function PedidoFicha({ id, onLista, onAbrirAssociado }) {
     recarregar()
   }, [recarregar])
 
+  // No telemóvel a ficha ocupa o ecrã e "Voltar à lista" regressa à lista; ao lado da lista não aparece.
   const voltar = (
-    <button type="button" className="admin-button-secondary" onClick={onLista}>
+    <button type="button" className="mesa-voltar" onClick={onLista}>
       Voltar à lista
     </button>
   )
 
   if (erro || dados === null) {
     return (
-      <section className="admin-section">
+      <FichaCartao>
+        {voltar}
         <p className={erro ? 'admin-error' : undefined} role="alert">
           {erro ? LOAD_ERROR : 'Este pedido não existe.'}
         </p>
-        {voltar}
-      </section>
+      </FichaCartao>
     )
   }
   if (dados === undefined) return <p>A carregar…</p>
@@ -234,14 +246,11 @@ export default function PedidoFicha({ id, onLista, onAbrirAssociado }) {
 
   return (
     <>
-      <section className="admin-section">
-        <div className="admin-section-head">
-          <h2>{pedido.nome_completo}</h2>
-          {voltar}
+      {voltar}
+      <FichaCartao sobretitulo={`Pedido de adesão · ${manual ? 'criado à mão' : 'Tally'}`} nome={pedido.nome_completo}>
+        <div className="mesa-ficha-estado">
+          <Pilula estado={pedido.estado}>{rotulo(ESTADOS_PEDIDO, pedido.estado)}</Pilula>
         </div>
-        <p>
-          <span className={`assoc-estado assoc-estado-${pedido.estado}`}>{rotulo(ESTADOS_PEDIDO, pedido.estado)}</span>
-        </p>
 
         {aviso && (
           <p className="assoc-aviso" role="status">
@@ -249,62 +258,52 @@ export default function PedidoFicha({ id, onLista, onAbrirAssociado }) {
           </p>
         )}
 
-        <dl className="assoc-dados">
-          <dt>Nome nos emails</dt>
-          <dd>{pedido.nome_emails}</dd>
-          <dt>Email</dt>
-          <dd>
-            <a href={`mailto:${pedido.email}`}>{pedido.email}</a>
-          </dd>
-          <dt>Pedido</dt>
-          <dd>
-            {formatDate(dataBruxelas(pedido.data_pedido))}
-            {manual ? ' · criado à mão' : ' · Tally'}
-          </dd>
-          <dt>Aniversário</dt>
-          <dd>{pedido.aniversario ?? '—'}</dd>
-          <dt>Primeiro contacto</dt>
-          <dd>{pedido.primeiro_contacto ?? '—'}</dd>
-          <dt>Newsletter</dt>
-          <dd>{yesNo(pedido.newsletter)}</dd>
-          <dt>Consentimento</dt>
-          <dd>{yesNo(pedido.consentimento)}</dd>
-          {pedido.data_pagamento && (
-            <>
-              <dt>Pagamento</dt>
-              <dd>
-                {formatDate(pedido.data_pagamento)}
-                {nomePerfil(pedido.pagamento_confirmado_por) && `, confirmado por ${nomePerfil(pedido.pagamento_confirmado_por)}`}
-                {pedido.data_pagamento <= FIM_FUNDADORES ? ' · fundador' : ''}
-              </dd>
-            </>
-          )}
-          <dt>Contacto no Rede</dt>
-          <dd>
-            {pedido.contacto ? (
-              <Link to={`/admin?s=rede&c=${pedido.contacto.id}`}>{pedido.contacto.nome}</Link>
-            ) : (
-              'nenhum ligado (liga-se ao admitir)'
-            )}
-          </dd>
-          {associado && (
-            <>
-              <dt>Associado</dt>
-              <dd>
-                <button type="button" className="assoc-ligacao-texto" onClick={() => onAbrirAssociado(associado.id)}>
-                  n.º {associado.numero}
-                </button>
-                {` · ${rotulo(TIPOS_ASSOCIADO, associado.tipo)}${associado.fundador ? ' · fundador' : ''}`}
-              </dd>
-              <dt>Boas-vindas</dt>
-              <dd>
-                {boasVindas
+        <Dados
+          itens={[
+            { rotulo: 'Nome nos emails', valor: pedido.nome_emails },
+            { rotulo: 'Email', valor: <a href={`mailto:${pedido.email}`}>{pedido.email}</a> },
+            { rotulo: 'Pedido', valor: formatDate(dataBruxelas(pedido.data_pedido)) },
+            { rotulo: 'Aniversário', valor: pedido.aniversario ?? '—' },
+            { rotulo: 'Primeiro contacto', valor: pedido.primeiro_contacto ?? '—' },
+            { rotulo: 'Newsletter', valor: yesNo(pedido.newsletter) },
+            { rotulo: 'Consentimento', valor: yesNo(pedido.consentimento) },
+            {
+              rotulo: 'Pagamento',
+              valor:
+                pedido.data_pagamento &&
+                `${formatDate(pedido.data_pagamento)}${
+                  nomePerfil(pedido.pagamento_confirmado_por) ? `, confirmado por ${nomePerfil(pedido.pagamento_confirmado_por)}` : ''
+                }${pedido.data_pagamento <= FIM_FUNDADORES ? ' · fundador' : ''}`,
+            },
+            {
+              rotulo: 'Contacto no Rede',
+              valor: pedido.contacto ? (
+                <Link to={`/admin?s=rede&c=${pedido.contacto.id}`}>{pedido.contacto.nome}</Link>
+              ) : (
+                'nenhum ligado (liga-se ao admitir)'
+              ),
+            },
+            {
+              rotulo: 'Associado',
+              valor: associado && (
+                <>
+                  <button type="button" className="assoc-ligacao-texto" onClick={() => onAbrirAssociado(associado.id)}>
+                    n.º {associado.numero}
+                  </button>
+                  {` · ${rotulo(TIPOS_ASSOCIADO, associado.tipo)}${associado.fundador ? ' · fundador' : ''}`}
+                </>
+              ),
+            },
+            {
+              rotulo: 'Boas-vindas',
+              valor:
+                associado &&
+                (boasVindas
                   ? `email ${associado.fundador ? '9' : '10'} enviado`
-                  : `email ${associado.fundador ? '9' : '10'} por enviar: sai na passagem seguinte da função diária, às 9h`}
-              </dd>
-            </>
-          )}
-        </dl>
+                  : `email ${associado.fundador ? '9' : '10'} por enviar: sai na passagem seguinte da função diária, às 9h`),
+            },
+          ]}
+        />
 
         {pedido.notas && <p className="assoc-texto">{pedido.notas}</p>}
 
@@ -330,21 +329,31 @@ export default function PedidoFicha({ id, onLista, onAbrirAssociado }) {
             }}
           />
         )}
-        {aberto && (
+        {aberto && !aEncerrar && (
+          <Accoes
+            saidas={
+              <button type="button" className="mesa-saida" onClick={() => setAEncerrar(true)}>
+                Encerrar o pedido
+              </button>
+            }
+          />
+        )}
+        {aberto && aEncerrar && (
           <Saida
             pedido={pedido}
+            onCancelar={() => setAEncerrar(false)}
             onFeito={() => {
               setAviso('Pedido encerrado.')
+              setAEncerrar(false)
               recarregar()
             }}
           />
         )}
-      </section>
+      </FichaCartao>
 
-      <section className="admin-section">
-        <h2>Emails</h2>
+      <FichaCartao titulo="Emails">
         <Envios envios={envios} onMudou={recarregar} />
-      </section>
+      </FichaCartao>
     </>
   )
 }

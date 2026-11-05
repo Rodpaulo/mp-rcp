@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { ItemMesa } from '../admin/mesa/ListaMesa.jsx'
+import Pilula from '../admin/mesa/Pilula.jsx'
 import { LOAD_ERROR } from '../admin/text.js'
 import { listarEmailsTipo } from './api.js'
 import { MANUAIS, numeroEmail } from './textos.js'
@@ -23,22 +25,20 @@ export default function EmailsTipo({ onAbrir }) {
         </p>
       )}
       {tipos && (
-        <ul className="assoc-lista">
+        <ul className="mesa-itens">
           {tipos.map((t) => (
-            <li key={t.chave}>
-              <button type="button" className="assoc-linha" onClick={() => onAbrir(t.chave)}>
-                <span className="assoc-linha-nome">
-                  {numeroEmail(t.chave)}. {t.nome}
+            <ItemMesa
+              key={t.chave}
+              onAbrir={() => onAbrir(t.chave)}
+              nome={`${numeroEmail(t.chave)}. ${t.nome}`}
+              detalhe={t.quando}
+              pilula={
+                <span className="mesa-pilulas">
+                  <Pilula>{MANUAIS.includes(t.chave) ? 'Manual' : 'Automático'}</Pilula>
+                  {!t.activo && <Pilula estado="cancelado">Inactivo</Pilula>}
                 </span>
-                {t.quando && <span className="assoc-linha-detalhe">{t.quando}</span>}
-                <span>
-                  <span className={`assoc-estado ${MANUAIS.includes(t.chave) ? 'assoc-envio-manual' : 'assoc-envio-auto'}`}>
-                    {MANUAIS.includes(t.chave) ? 'Manual' : 'Automático'}
-                  </span>
-                  {!t.activo && <span className="assoc-estado assoc-estado-cancelado"> Inactivo</span>}
-                </span>
-              </button>
-            </li>
+              }
+            />
           ))}
         </ul>
       )}

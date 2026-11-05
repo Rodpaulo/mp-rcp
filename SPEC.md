@@ -556,6 +556,7 @@ Quatro cartões brancos sobre fundo cinzento claro (#EDEDED): número em Rajdhan
 - Lado a lado a partir de 64rem (1024 px); abaixo disso empilha-se como no telemóvel. Sem item aberto, a coluna da ficha mostra "Escolhe um contacto na lista.".
 - Rede: na vista Contactos, a pesquisa e o estado em pílulas (Todos e os cinco estados); a etiqueta fica numa lista de escolha, por serem oito. As etiquetas passam para a linha secundária do item e para o sobretítulo da ficha. Abrir ou fechar um contacto mantém os parâmetros da lista (`v`, `q`, `e`, `st`), para a lista não mudar ao lado da ficha; a lista lê de novo ao abrir, gravar ou fechar um contacto. As acções da própria linha ficam: "Registar revisão" (Por rever), "Abrir cartão" e "Concluir" (Em atraso), "Criar contacto" (Interessados). "Apagar contacto" passa a saída da linha de acções da ficha, com a mesma confirmação.
 - Os formulários abertos na coluna da ficha (contacto, interacção, revisão) mantêm-se; só os botões tomam as cores da mesa.
+- Associados: as cinco vistas ficam em pílulas por cima da mesa. A ficha do pedido fica ao lado da lista dos pedidos (com o mesmo filtro `st`); a do associado ao lado da lista dos associados, que deixa de ser tabela (n.º e nome; tipo, fundador e quota do ano na linha secundária). Abrir um associado leva `v=associados`; abrir um pedido tira o `v`. "Encerrar o pedido" passa a saída da ficha: abre o formulário de saída (com nota e confirmação, como antes) e "Cancelar" fecha-o. "Pagamento confirmado" e "Admitir" ficam na ficha como estão. A origem do pedido (Tally ou criado à mão) passa ao sobretítulo. Os Emails-tipo usam os itens da mesa, em largura total.
 
 ### 17.5 Pílulas de estado
 Um só mapa de estado para cor, para os três módulos:
@@ -566,6 +567,8 @@ Um só mapa de estado para cor, para os três módulos:
 - texto carmim sobre branco, com contorno: Cancelado, Encerrada, Desaparecido.
 
 Texto sobre turquesa e amarelo sempre azul-marinho.
+
+Estados que o mapa acima não nomeia: Desistiu, Não admitido e Saído como Cancelado; Suspenso como Em espera; nos envios, Enviado como Admitido, A enviar como Pago e Falhou como Cancelado. Sem estado (Manual, Automático), fundo #EDEDED.
 
 ### 17.6 Regras de construção
 - **O ficheiro público só pode diminuir.** O admin inteiro carrega com `React.lazy` a partir de `App.jsx`: o painel, o login, o `Admin.css` e os módulos saem do ficheiro da página pública.

@@ -5,6 +5,9 @@ import { dataBruxelas, euros } from '../../supabase/functions/_shared/campos.js'
 import { listarEnviosDoAssociado, listarPerfis, obterAssociado, registarRecibo } from './api.js'
 import Envios from './Envios.jsx'
 import { ESTADOS_ASSOCIADO, TIPOS_ASSOCIADO, nomeDoAssociado, rotulo } from './textos.js'
+import Dados from '../admin/mesa/Dados.jsx'
+import FichaCartao from '../admin/mesa/FichaCartao.jsx'
+import Pilula from '../admin/mesa/Pilula.jsx'
 
 // "Registar recibo" numa quota paga: número e data (hoje por omissão).
 function Recibo({ quota, onFeito }) {
@@ -82,20 +85,21 @@ export default function AssociadoFicha({ id, onLista, onAbrirPedido }) {
     recarregar()
   }, [recarregar])
 
+  // No telemóvel a ficha ocupa o ecrã e "Voltar à lista" regressa à lista; ao lado da lista não aparece.
   const voltar = (
-    <button type="button" className="admin-button-secondary" onClick={onLista}>
+    <button type="button" className="mesa-voltar" onClick={onLista}>
       Voltar à lista
     </button>
   )
 
   if (erro || dados === null) {
     return (
-      <section className="admin-section">
+      <FichaCartao>
+        {voltar}
         <p className={erro ? 'admin-error' : undefined} role="alert">
           {erro ? LOAD_ERROR : 'Este associado não existe.'}
         </p>
-        {voltar}
-      </section>
+      </FichaCartao>
     )
   }
   if (dados === undefined) return <p>A carregar…</p>
@@ -107,58 +111,38 @@ export default function AssociadoFicha({ id, onLista, onAbrirPedido }) {
 
   return (
     <>
-      <section className="admin-section">
-        <div className="admin-section-head">
-          <h2>
-            N.º {a.numero} · {nomeDoAssociado(a)}
-          </h2>
-          {voltar}
+      {voltar}
+      <FichaCartao
+        sobretitulo={[`Associado n.º ${a.numero}`, rotulo(TIPOS_ASSOCIADO, a.tipo), a.fundador && 'fundador'].filter(Boolean).join(' · ')}
+        nome={nomeDoAssociado(a)}
+      >
+        <div className="mesa-ficha-estado">
+          <Pilula estado={a.estado}>{rotulo(ESTADOS_ASSOCIADO, a.estado)}</Pilula>
         </div>
-        <dl className="assoc-dados">
-          <dt>Tipo</dt>
-          <dd>{rotulo(TIPOS_ASSOCIADO, a.tipo)}</dd>
-          <dt>Fundador</dt>
-          <dd>{a.fundador ? 'sim' : 'não'}</dd>
-          <dt>Estado</dt>
-          <dd>{rotulo(ESTADOS_ASSOCIADO, a.estado)}</dd>
-          <dt>Admissão</dt>
-          <dd>
-            {formatDate(a.data_admissao)}
-            {admitidoPor && `, por ${admitidoPor}`}
-          </dd>
-          {email && (
-            <>
-              <dt>Email</dt>
-              <dd>
-                <a href={`mailto:${email}`}>{email}</a>
-              </dd>
-            </>
-          )}
-          {a.pedido?.aniversario && (
-            <>
-              <dt>Aniversário</dt>
-              <dd>{a.pedido.aniversario}</dd>
-            </>
-          )}
-          <dt>Contacto no Rede</dt>
-          <dd>
-            <Link to={`/admin?s=rede&c=${a.contacto_id}`}>{a.contacto?.nome}</Link>
-          </dd>
-          {a.pedido && (
-            <>
-              <dt>Pedido</dt>
-              <dd>
+        <Dados
+          itens={[
+            { rotulo: 'Tipo', valor: rotulo(TIPOS_ASSOCIADO, a.tipo) },
+            { rotulo: 'Fundador', valor: a.fundador ? 'sim' : 'não' },
+            { rotulo: 'Admissão', valor: `${formatDate(a.data_admissao)}${admitidoPor ? `, por ${admitidoPor}` : ''}` },
+            { rotulo: 'Email', valor: email && <a href={`mailto:${email}`}>{email}</a> },
+            { rotulo: 'Aniversário', valor: a.pedido?.aniversario },
+            {
+              rotulo: 'Contacto no Rede',
+              valor: <Link to={`/admin?s=rede&c=${a.contacto_id}`}>{a.contacto?.nome}</Link>,
+            },
+            {
+              rotulo: 'Pedido',
+              valor: a.pedido && (
                 <button type="button" className="assoc-ligacao-texto" onClick={() => onAbrirPedido(a.pedido.id)}>
                   {formatDate(dataBruxelas(a.pedido.data_pedido))}
                 </button>
-              </dd>
-            </>
-          )}
-        </dl>
-      </section>
+              ),
+            },
+          ]}
+        />
+      </FichaCartao>
 
-      <section className="admin-section">
-        <h2>Quotas</h2>
+      <FichaCartao titulo="Quotas">
         {quotas.length === 0 ? (
           <p>Sem quotas registadas.</p>
         ) : (
@@ -178,12 +162,11 @@ export default function AssociadoFicha({ id, onLista, onAbrirPedido }) {
             ))}
           </ul>
         )}
-      </section>
+      </FichaCartao>
 
-      <section className="admin-section">
-        <h2>Emails</h2>
+      <FichaCartao titulo="Emails">
         <Envios envios={envios} onMudou={recarregar} />
-      </section>
+      </FichaCartao>
     </>
   )
 }
