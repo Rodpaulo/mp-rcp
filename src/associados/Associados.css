@@ -330,12 +330,13 @@ ul.assoc-nota {
   align-items: center;
   min-height: 44px;
   padding: 0.25rem 0.75rem;
+  border-left: 4px solid transparent;
   cursor: pointer;
 }
 
 .assoc-escolha-item:has(input:checked) {
-  background: var(--background);
-  box-shadow: inset 4px 0 0 var(--navy);
+  background: var(--grey-light);
+  border-left-color: var(--carmine);
 }
 
 .assoc-escolha-item input {

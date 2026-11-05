@@ -559,6 +559,13 @@ button.mesa-item-linha:hover {
   gap: 0.5rem;
 }
 
+.mesa-accoes-saidas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+  margin-left: auto;
+}
+
 /* Todos os botões do admin com o mesmo tamanho: 44 px de altura, Montserrat 600 a 14 px.
    As cores: o principal carmim, o secundário com contorno turquesa escura, o discreto com contorno cinzento.
    Os formulários dos módulos, abertos na coluna da ficha ou em largura total, seguem as mesmas cores. */
