@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
+import ListaMesa, { ItemMesa, PilulasFiltro } from '../admin/mesa/ListaMesa.jsx'
+import Pilula from '../admin/mesa/Pilula.jsx'
 import { LOAD_ERROR } from '../admin/text.js'
 import { listarLivros } from './api.js'
 import { ESTADOS, quemTrouxe, rotuloEstado } from './livros.js'
+
+const FILTRO_ESTADO = [{ valor: '', rotulo: 'Todos' }, ...ESTADOS]
 
 function corresponde(livro, pesquisa, estado) {
   if (estado && livro.status !== estado) return false
@@ -16,31 +20,37 @@ function corresponde(livro, pesquisa, estado) {
   )
 }
 
-// Lista dos livros, no separador Biblioteca.
-export default function Livros({ onAbrir, onNovo }) {
+// Coluna da lista dos livros, no separador Biblioteca. recarga muda quando se abre, grava ou fecha um livro.
+export default function Livros({ aberto, recarga, onAbrir, onNovo }) {
   const [livros, setLivros] = useState(null)
   const [erro, setErro] = useState(false)
   const [pesquisa, setPesquisa] = useState('')
   const [estado, setEstado] = useState('')
 
   useEffect(() => {
-    listarLivros().then(setLivros, (error) => {
-      console.error('carregar livros falhou:', error)
-      setErro(true)
-    })
-  }, [])
+    listarLivros().then(
+      (lidos) => {
+        setLivros(lidos)
+        setErro(false)
+      },
+      (error) => {
+        console.error('carregar livros falhou:', error)
+        setErro(true)
+      },
+    )
+  }, [recarga])
 
   const visiveis = (livros ?? []).filter((livro) => corresponde(livro, pesquisa, estado))
 
   return (
-    <section className="admin-section">
-      <div className="admin-section-head">
-        <h2>Biblioteca</h2>
-        <button type="button" className="admin-button" onClick={onNovo}>
+    <ListaMesa
+      titulo="Biblioteca"
+      accao={
+        <button type="button" className="mesa-botao" onClick={onNovo}>
           Acrescentar livro
         </button>
-      </div>
-
+      }
+    >
       {erro && (
         <p className="admin-error" role="alert">
           {LOAD_ERROR}
@@ -49,64 +59,36 @@ export default function Livros({ onAbrir, onNovo }) {
 
       {livros && (
         <>
-          <div className="biblioteca-filtros">
-            <label className="admin-field">
-              <span>Pesquisar por número ou título</span>
-              <input type="search" value={pesquisa} onChange={(event) => setPesquisa(event.target.value)} />
-            </label>
-            <label className="admin-field">
-              <span>Estado</span>
-              <select className="biblioteca-select" value={estado} onChange={(event) => setEstado(event.target.value)}>
-                <option value="">Todos</option>
-                {ESTADOS.map((item) => (
-                  <option key={item.valor} value={item.valor}>
-                    {item.rotulo}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+          <label className="admin-field mesa-pesquisa">
+            <span>Pesquisar por número ou título</span>
+            <input type="search" value={pesquisa} onChange={(event) => setPesquisa(event.target.value)} />
+          </label>
+          <PilulasFiltro rotulo="Estado" opcoes={FILTRO_ESTADO} valor={estado} onMudar={setEstado} />
 
-          <p className="biblioteca-contagem">
+          <p className="mesa-contagem">
             {visiveis.length === livros.length
               ? `${livros.length} ${livros.length === 1 ? 'livro' : 'livros'}`
               : `${visiveis.length} de ${livros.length} livros`}
           </p>
 
           {visiveis.length > 0 && (
-            <div className="admin-table-wrap">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Número</th>
-                    <th scope="col">Título</th>
-                    <th scope="col">Autor</th>
-                    <th scope="col">Estado</th>
-                    <th scope="col">Entrada</th>
-                    <th scope="col">Quem trouxe</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visiveis.map((livro) => (
-                    <tr key={livro.id}>
-                      <td>
-                        <button type="button" className="biblioteca-ligacao" onClick={() => onAbrir(livro.id)}>
-                          {livro.number}
-                        </button>
-                      </td>
-                      <td>{livro.title}</td>
-                      <td>{livro.author}</td>
-                      <td>{rotuloEstado(livro.status)}</td>
-                      <td>{livro.editions?.code}</td>
-                      <td>{quemTrouxe(livro)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ul className="mesa-itens">
+              {visiveis.map((livro) => (
+                <ItemMesa
+                  key={livro.id}
+                  aberto={livro.id === aberto}
+                  onAbrir={() => onAbrir(livro.id)}
+                  nome={`${livro.number} · ${livro.title}`}
+                  detalhe={[livro.author, livro.editions?.code && `entrada no ${livro.editions.code}`, quemTrouxe(livro)]
+                    .filter(Boolean)
+                    .join(' · ')}
+                  pilula={<Pilula estado={livro.status}>{rotuloEstado(livro.status)}</Pilula>}
+                />
+              ))}
+            </ul>
           )}
         </>
       )}
-    </section>
+    </ListaMesa>
   )
 }

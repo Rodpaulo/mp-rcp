@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react'
 import { LOAD_ERROR } from '../admin/text.js'
 import { apagarLivro, listarMovimentos, obterLivro } from './api.js'
 import { TIPOS_MOVIMENTO, quando, quemTrouxe, rotuloEstado } from './livros.js'
+import Accoes from '../admin/mesa/Accoes.jsx'
+import Dados from '../admin/mesa/Dados.jsx'
+import FichaCartao from '../admin/mesa/FichaCartao.jsx'
+import Pilula from '../admin/mesa/Pilula.jsx'
 
 // Ficha de um livro: dados, histórico de movimentos (só leitura), editar e apagar.
 export default function Livro({ id, onLista, onEditar, onApagado }) {
@@ -39,20 +43,21 @@ export default function Livro({ id, onLista, onEditar, onApagado }) {
     }
   }
 
+  // No telemóvel a ficha ocupa o ecrã e "Voltar à lista" regressa à lista; ao lado da lista não aparece.
   const voltar = (
-    <button type="button" className="admin-button-secondary" onClick={onLista}>
+    <button type="button" className="mesa-voltar" onClick={onLista}>
       Voltar à lista
     </button>
   )
 
   if (erro || dados === null) {
     return (
-      <section className="admin-section">
+      <FichaCartao>
+        {voltar}
         <p className={erro ? 'admin-error' : undefined} role="alert">
           {erro ? LOAD_ERROR : 'Este livro não existe.'}
         </p>
-        {voltar}
-      </section>
+      </FichaCartao>
     )
   }
 
@@ -62,38 +67,43 @@ export default function Livro({ id, onLista, onEditar, onApagado }) {
 
   return (
     <>
-      <section className="admin-section">
-        <div className="admin-section-head">
-          <h2>
-            {livro.number} · {livro.title}
-          </h2>
-          {voltar}
+      {voltar}
+      <FichaCartao sobretitulo={`Livro ${livro.number}`} nome={livro.title}>
+        <div className="mesa-ficha-estado">
+          <Pilula estado={livro.status}>{rotuloEstado(livro.status)}</Pilula>
         </div>
 
-        <dl className="biblioteca-dados">
-          <dt>Autor</dt>
-          <dd>{livro.author || 'sem autor'}</dd>
-          <dt>Estado</dt>
-          <dd>{rotuloEstado(livro.status)}</dd>
-          <dt>Edição de entrada</dt>
-          <dd>{livro.editions?.code || 'sem edição'}</dd>
-          <dt>Quem trouxe</dt>
-          <dd>{quemTrouxe(livro) || 'não registado'}</dd>
-          {livro.note && (
-            <>
-              <dt>Nota</dt>
-              <dd className="biblioteca-texto">{livro.note}</dd>
-            </>
-          )}
-        </dl>
+        <Dados
+          itens={[
+            { rotulo: 'Autor', valor: livro.author || 'sem autor' },
+            { rotulo: 'Edição de entrada', valor: livro.editions?.code || 'sem edição' },
+            { rotulo: 'Quem trouxe', valor: quemTrouxe(livro) || 'não registado' },
+            { rotulo: 'Nota', valor: livro.note && <span className="biblioteca-texto">{livro.note}</span> },
+          ]}
+        />
 
-        <button type="button" className="admin-button" onClick={onEditar}>
-          Editar
-        </button>
-      </section>
+        {/* Só se apaga um livro sem movimentos: com histórico, "Apagar livro" não aparece (SPEC 15.2). */}
+        <Accoes
+          saidas={
+            movimentos.length === 0 && (
+              <button type="button" className="mesa-saida" onClick={handleApagar} disabled={aApagar}>
+                {aApagar ? 'Um momento…' : 'Apagar livro'}
+              </button>
+            )
+          }
+        >
+          <button type="button" className="mesa-botao" onClick={onEditar}>
+            Editar
+          </button>
+        </Accoes>
+        {erroApagar && (
+          <p className="admin-error" role="alert">
+            Não foi possível apagar. Tenta outra vez.
+          </p>
+        )}
+      </FichaCartao>
 
-      <section className="admin-section">
-        <h2>Histórico</h2>
+      <FichaCartao titulo="Histórico">
         {movimentos.length === 0 ? (
           <p>Ainda não há movimentos.</p>
         ) : (
@@ -109,22 +119,7 @@ export default function Livro({ id, onLista, onEditar, onApagado }) {
             ))}
           </ol>
         )}
-      </section>
-
-      {/* Só se apaga um livro sem movimentos: com histórico, o botão não aparece (SPEC 15.2). */}
-      {movimentos.length === 0 && (
-        <section className="admin-section">
-          <h2>Apagar livro</h2>
-          {erroApagar && (
-            <p className="admin-error" role="alert">
-              Não foi possível apagar. Tenta outra vez.
-            </p>
-          )}
-          <button type="button" className="biblioteca-botao-perigo" onClick={handleApagar} disabled={aApagar}>
-            {aApagar ? 'Um momento…' : 'Apagar livro'}
-          </button>
-        </section>
-      )}
+      </FichaCartao>
     </>
   )
 }
