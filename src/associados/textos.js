@@ -67,10 +67,20 @@ export function fonteDoEmail(chave) {
   return 'associado'
 }
 
+// Título da lista de escolha da pré-visualização.
 export const FONTES = {
-  contacto: 'Contacto do Rede com a etiqueta associado e sem pedido',
-  pedido: 'Pedido de adesão',
-  associado: 'Associado',
+  contacto: 'Escolhe um contacto do Rede (etiqueta associado, sem pedido de adesão)',
+  pedido: 'Escolhe um pedido de adesão',
+  associado: 'Escolhe um associado',
+}
+
+// Para pesquisar sem distinguir maiúsculas nem acentos, como no Rede (src/rede/listas.js).
+export function normalizar(texto) {
+  return (texto ?? '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .trim()
 }
 
 // Campos disponíveis, como no documento "Emails-tipo para associados".

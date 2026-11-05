@@ -16,18 +16,55 @@ import {
   listarPedidos,
   obterEmailTipo,
 } from './api.js'
-import { CAMPOS, FONTES, MANUAIS, fonteDoEmail, nomeDoAssociado, numeroEmail } from './textos.js'
+import EscolhaRegisto from './EscolhaRegisto.jsx'
+import {
+  CAMPOS,
+  ESTADOS_PEDIDO,
+  FONTES,
+  MANUAIS,
+  fonteDoEmail,
+  nomeDoAssociado,
+  normalizar,
+  numeroEmail,
+  rotulo,
+} from './textos.js'
 
 const NOMES_CONHECIDOS = new Set(CAMPOS.map((c) => c.nome))
+const vazioTexto = (v) => v === null || v === undefined || String(v).trim() === ''
 
+const porNome = (a, b) => a.rotulo.localeCompare(b.rotulo, 'pt')
+
+// Registos para a lista de escolha: contactos por nome (rótulo: nome; detalhe: email),
+// pedidos por nome (nome e estado), associados por número (número e nome).
 async function carregarFonte(fonte) {
   if (fonte === 'contacto') {
-    return (await listarContactosSemPedido()).map((c) => ({ id: c.id, rotulo: `${c.nome}${c.email ? ` · ${c.email}` : ''}`, dados: c }))
+    return (await listarContactosSemPedido())
+      .map((c) => ({ id: c.id, rotulo: c.nome, detalhe: c.email, procura: normalizar(`${c.nome} ${c.email ?? ''}`), dados: c }))
+      .sort(porNome)
   }
   if (fonte === 'pedido') {
-    return (await listarPedidos()).map((p) => ({ id: p.id, rotulo: `${p.nome_completo} · ${p.email}`, dados: p }))
+    return (await listarPedidos())
+      .map((p) => ({
+        id: p.id,
+        rotulo: p.nome_completo,
+        detalhe: rotulo(ESTADOS_PEDIDO, p.estado),
+        procura: normalizar(`${p.nome_completo} ${p.email}`),
+        dados: p,
+      }))
+      .sort(porNome)
   }
-  return (await listarAssociados()).map((a) => ({ id: a.id, rotulo: `n.º ${a.numero} · ${nomeDoAssociado(a)}`, dados: a }))
+  return (await listarAssociados()).map((a) => ({
+    id: a.id,
+    rotulo: `n.º ${a.numero} · ${nomeDoAssociado(a)}`,
+    procura: normalizar(`${a.numero} ${nomeDoAssociado(a)}`),
+    dados: a,
+  }))
+}
+
+const VAZIO = {
+  contacto: 'Não há contactos do Rede com a etiqueta associado e sem pedido de adesão.',
+  pedido: 'Ainda não há pedidos de adesão.',
+  associado: 'Ainda não há associados.',
 }
 
 // Campos do registo escolhido, com as mesmas funções que as Edge Functions usam.
@@ -85,7 +122,7 @@ export default function EmailTipoForm({ chave, onVoltar }) {
   const registo = registos?.find((r) => r.id === registoId)?.dados
   const base = useMemo(() => (config ? camposDaFonte(fonte, registo, config, hoje) : {}), [fonte, registo, config, hoje])
   const usados = camposDoTexto(assunto, corpo)
-  const valores = { ...base, ...manuais }
+  const valores = { ...manuais, ...Object.fromEntries(Object.entries(base).filter(([, v]) => !vazioTexto(v))) }
   const prev = { assunto: preencher(assunto, valores, hoje), corpo: preencher(corpo, valores, hoje) }
   const emFalta = [...new Set([...prev.assunto.emFalta, ...prev.corpo.emFalta])]
   const desconhecidos = usados.filter((n) => !NOMES_CONHECIDOS.has(n))
@@ -230,33 +267,27 @@ export default function EmailTipoForm({ chave, onVoltar }) {
         <h2>Pré-visualização</h2>
         <p className="assoc-nota">Com o texto acima, mesmo antes de gravar. Copiar não regista envio.</p>
 
-        {registos.length === 0 ? (
-          <p>Não há nenhum registo para pré-visualizar ({FONTES[fonte].toLowerCase()}).</p>
-        ) : (
-          <label className="admin-field">
-            <span>{FONTES[fonte]}</span>
-            <select
-              className="assoc-select"
-              value={registoId}
-              onChange={(event) => {
-                setRegistoId(event.target.value)
-                setManuais({})
-              }}
-            >
-              {registos.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.rotulo}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+        <EscolhaRegisto
+          titulo={FONTES[fonte]}
+          vazio={VAZIO[fonte]}
+          registos={registos}
+          escolhido={registoId}
+          onEscolher={(id) => {
+            setRegistoId(id)
+            setManuais({})
+          }}
+        />
 
         {usados.length > 0 && (
           <fieldset className="assoc-valores">
             <legend>Campos deste email</legend>
+            <p className="assoc-nota">
+              Os que vêm do registo escolhido ou da configuração não se escrevem aqui; só os que faltam.
+            </p>
             {usados.map((nome) => {
-              const valor = valores[nome] ?? ''
+              // Vem dos dados (registo ou configuração): só leitura. Sem valor: caixa para preencher.
+              const doRegisto = !vazioTexto(base[nome])
+              const valor = doRegisto ? String(base[nome]) : (manuais[nome] ?? '')
               const falta = emFalta.includes(nome)
               return (
                 <label key={nome} className={`admin-field ${falta ? 'assoc-campo-falta' : ''}`}>
@@ -264,7 +295,12 @@ export default function EmailTipoForm({ chave, onVoltar }) {
                     {`{${nome}}`}
                     {falta && ' · por preencher'}
                   </span>
-                  <input value={valor} onChange={(event) => setManuais((m) => ({ ...m, [nome]: event.target.value }))} />
+                  <input
+                    value={valor}
+                    readOnly={doRegisto}
+                    className={doRegisto ? 'assoc-campo-lido' : undefined}
+                    onChange={(event) => setManuais((m) => ({ ...m, [nome]: event.target.value }))}
+                  />
                 </label>
               )
             })}

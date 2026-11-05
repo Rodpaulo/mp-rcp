@@ -426,3 +426,58 @@ ul.assoc-nota {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ---------- Escolha do registo da pré-visualização ---------- */
+
+.assoc-escolha {
+  margin: 0 0 1rem;
+  padding: 0;
+  border: 0;
+}
+
+.assoc-escolha legend {
+  margin-bottom: 0.5rem;
+  padding: 0;
+  font-weight: 600;
+}
+
+.assoc-escolha-lista {
+  max-height: 18rem;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid #D5DCE2;
+  border-radius: 6px;
+}
+
+.assoc-escolha-lista li + li {
+  border-top: 1px solid #D5DCE2;
+}
+
+.assoc-escolha-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.25rem 0.75rem;
+  cursor: pointer;
+}
+
+.assoc-escolha-item:has(input:checked) {
+  background: var(--background);
+  box-shadow: inset 4px 0 0 var(--navy);
+}
+
+.assoc-escolha-item input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+
+/* Campo que vem dos dados: só leitura. */
+.assoc-campo-lido {
+  background: var(--background);
+  border-style: dotted;
+}
