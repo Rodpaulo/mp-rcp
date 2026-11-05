@@ -314,7 +314,7 @@ Regras:
 - Sem dependências novas. Interface em português europeu, tratamento por tu. Datas por extenso como no manual da marca, com o mês em maiúscula ("30 de Outubro de 2026"), em todo o admin: no Rede e também no separador RCP (painel e lista de edições), com uma só função (`formatDate`, em `src/admin/text.js`).
 
 ### 14.8 Fases seguintes
-- **Associados**, quando a ASBL existir: o pedido de adesão já tem campo (`pedido_adesao_em`); quotas, estado de associado e ligação ao Tally ficam para essa fase, com secção própria neste SPEC.
+- **Associados**, quando a ASBL existir: o pedido de adesão já tem campo (`pedido_adesao_em`); quotas, estado de associado e ligação ao Tally ficam para essa fase, com secção própria neste SPEC (§16, desde 5 de Novembro de 2026).
 - Transferência para contas da associação e revisão do texto de privacidade (dados de contactos externos), depois do RCP06.
 - **Trello automático**: pela API do Trello, criar o cartão de cada contacto e arquivá-lo quando o contacto passa a `encerrada`. Não agora; até lá, a ligação faz-se à mão (§14.5).
 
@@ -340,3 +340,144 @@ Verificação do esquema (passo 0): um livro acrescentado pela direcção cabe n
 - Navegação por parâmetros no endereço, dentro do separador RCP: `?b=novo` (acrescentar), `?b=<id>` (livro), `?b=<id>&m=editar` (editar). Com `b`, o painel do RCP sai do ecrã e a sua leitura a cada 15 s pára; sem `b`, a lista aparece no fim do separador RCP.
 - Código em `src/biblioteca-admin/`, com um `api.js` próprio (o único ficheiro da secção que fala com a Supabase) e um CSS próprio; carrega com `React.lazy`, fora do ficheiro da página pública.
 - Lê `books`, `book_movements`, `editions` e `people` (só o nome ou o email de quem trouxe o livro). Sem dependências novas.
+
+## 16. Associados (acrescentado a 5 de Novembro de 2026)
+
+### 16.1 Desvio de âmbito, registado
+A secção 12 fecha a v2 numa lista curta, e o §14.8 deixava os associados para "quando a ASBL existir". A 5 de Novembro o Miguel decidiu acrescentar o módulo Associados, terceiro separador do admin (RCP · Rede · Associados), como fez com o Rede e a Biblioteca, com estas condições: o SPEC primeiro, depois a migração, depois as funções, depois os ecrãs; migração aditiva; `people`, `contactos` e o resto do Rede não mudam de esquema. Primeira fase: SPEC, migração 008 e as duas funções de servidor. Os ecrãs ficam para a fase seguinte.
+
+Este módulo afasta-se de três regras anteriores, e só nisto:
+- **§4** ("não há servidor intermédio nem funções serverless"): passa a haver duas Edge Functions da Supabase, no mesmo projecto, na UE. A página pública e o admin continuam a falar directamente com o Supabase.
+- **§6** ("a secret key nunca é usada"): as duas funções usam a chave de serviço que a Supabase injecta no ambiente das Edge Functions (`SUPABASE_SERVICE_ROLE_KEY`). Ninguém a copia nem a escreve: não sai da Supabase. A aplicação no browser continua só com a publishable key.
+- **§14.4** ("envio de email a partir da aplicação; gestão de quotas e pagamentos" fora do Rede): passam a existir, mas neste módulo, não no Rede.
+
+### 16.2 Finalidade
+Levar cada pessoa do pedido de adesão até associado com as quotas em dia, com o mínimo de trabalho humano: a direcção só confirma pagamentos, admite e regista recibos; tudo o resto (instruções de pagamento, lembretes, boas-vindas, aniversários, renovações) sai sozinho. Usam-no o Miguel (tesoureiro), a Ana e a Vera, com tudo visível para os três.
+
+### 16.3 Circuito
+- **Entrada única**: o formulário "Pedido de adesão" no Tally (`https://tally.so/r/BEaMqN`). Cada submissão chega por webhook à Edge Function `tally-webhook`, que cria o pedido. A folha Google do Tally deixa de ser instrumento de seguimento; fica só como cópia.
+- **Saída**: emails transaccionais pelo Resend, domínio `matinespensantes.org`, remetente `Matinés Pensantes <geral@matinespensantes.org>`, Reply-To `geral@matinespensantes.org`. Texto simples, com uma versão HTML mínima gerada do mesmo texto.
+- **Relógio**: a Edge Function `associados-diario`, chamada por `pg_cron` + `pg_net` todos os dias às 09:00 de Bruxelas, calcula os emails devidos e envia-os.
+- **Gestos humanos** (no admin, fase seguinte): confirmar pagamento, admitir, registar recibo e as saídas manuais do pedido. Nada mais é manual.
+
+### 16.4 Formulário do Tally (campos lidos pelo título)
+| Título no Tally | Coluna | Notas |
+|---|---|---|
+| Nome completo | `nome_completo` | obrigatório |
+| Nome a usar nos emails | `nome_emails` | obrigatório; é o `{primeiro_nome}` |
+| Email | `email` | obrigatório; trim + minúsculas |
+| Dia de aniversário | `aniversario` | facultativo; preenchê-lo é o consentimento para o email 12 |
+| Primeiro contacto com a Matinés Pensantes | `primeiro_contacto` | texto das opções escolhidas |
+| Consentimento | `consentimento` | obrigatório no Tally ("Autorizo.") |
+| Newsletter | `newsletter` | caixa "Quero receber a newsletter Entre encontros." |
+
+Os títulos comparam-se sem maiúsculas, acentos nem pontuação final; mudar um título no Tally obriga a mudar a função. O aniversário aceita "5/3", "05/03", "05-03", "5.3" e datas completas (fica só o dia e o mês); o que não se perceber fica vazio e o texto original vai para `notas`. O consentimento de newsletter fica no pedido; passá-lo ao MailPoet continua à mão, como no §9.
+
+### 16.5 Estados do pedido
+```
+recebido → instrucoes_enviadas → pago → admitido
+   └──────────────┴───────────────┴──→ desistiu | nao_admitido | cancelado
+```
+- `recebido`: criado pelo webhook.
+- `instrucoes_enviadas`: automático, quando o email 4 sai.
+- `pago`: manual, com `data_pagamento` (a do pagamento, não a do registo) e `pagamento_confirmado_por`.
+- `admitido`: manual; cria o associado (§16.6) e a quota (§16.7). O email 9 ou 10 sai na passagem seguinte da função diária.
+- `desistiu`, `nao_admitido`, `cancelado`: manuais. Não há cancelamento automático: o que acontece aos 90 dias ainda não está decidido.
+- Um segundo pedido no Tally com o email de um pedido em aberto (`recebido`, `instrucoes_enviadas` ou `pago`) não cria pedido novo nem envia email: fica uma linha nas `notas` do pedido em aberto, com a data e o identificador do Tally.
+
+### 16.6 Associados
+- Admitir cria uma linha em `associados`: contacto, pedido, número (sequência a partir de 1, nunca reutilizado; uma admissão que falhe pode deixar um salto), tipo (`efectivo` por omissão, ou `aderente`), fundador, data de admissão, quem admitiu, estado (`activo`, `suspenso`, `saido`).
+- **Fundador**: `data_pagamento` do pedido até 31 de Dezembro de 2026, inclusive, mesmo que a admissão seja em Janeiro. Decide entre o email 9 e o 10.
+- Um contacto é associado uma vez só. Um contacto que é associado não pode ser apagado no Rede (a base recusa): primeiro trata-se o associado. É a única excepção à regra do §14.5 de as ligações nunca impedirem uma operação actual, porque um associado tem quotas e recibos.
+
+### 16.7 Quotas
+- Valor por ano na configuração (`valor_quota_2026`, `valor_quota_2027`, …): 40 € em 2026 e em 2027.
+- Quem é admitido até 31 de Dezembro de 2027 fica com a quota de 2027 paga (o primeiro exercício vai até essa data). A partir de 2028, quem é admitido fica com a quota do ano da admissão paga.
+- A 1 de Janeiro de cada ano, a partir de 2028, a função diária cria para cada associado `activo` a linha da quota do ano, `nao_paga`, com o valor da configuração, e envia o email 16. Se a função não correr no dia 1, faz isto na primeira passagem de Janeiro; depois de Janeiro, não.
+- Enquanto a quota do ano estiver `nao_paga`: um email 17 por trimestre, no 2.º, 3.º e 4.º trimestres (o 1.º é o do email 16), na primeira passagem do trimestre. Quotas de anos anteriores não geram lembretes.
+- Registar o pagamento e o recibo (`data_pagamento`, `recibo_numero`, `recibo_data`) é manual.
+
+### 16.8 Emails-tipo
+Os textos são os do documento "Emails-tipo para associados" (5 de Novembro de 2026), carregados tal como estão na tabela `emails_tipo` e editáveis no admin. São 19: os 18 numerados e o 3-A (novo nessa versão).
+
+| Chave | Envio | Quando sai (pela função diária, salvo o 4) |
+|---|---|---|
+| `01_convite_pendentes` | manual | — |
+| `02_convite_contactos` | automático, por decidir | ainda não sai: falta decidir a quem (§16.12) |
+| `03_ultimos_dias_sem_pedido` | automático, por decidir | ainda não sai: depende do 2 |
+| `03a_ultimos_dias_sem_pagamento` | automático | uma vez, entre `data_ultimos_dias_fundador` (15 de Dezembro de 2026) e 31 de Dezembro de 2026, a cada pedido `recebido` ou `instrucoes_enviadas` |
+| `04_pedido_recebido` | automático | logo, pelo webhook; se falhar, na passagem seguinte |
+| `05`…`08` lembretes | automático | aos 10, 30, 60 e 90 dias após a data do pedido, só com o estado `recebido` ou `instrucoes_enviadas` |
+| `09_admissao_fundador` / `10_admissao` | automático | na primeira passagem depois da admissão, consoante `fundador` |
+| `11_recibo_adesao` | manual | — |
+| `12_aniversario` | automático | no dia, a associados `activo` com aniversário preenchido; o 29/02 sai a 28/02 nos anos comuns |
+| `13_boas_ferias` | automático | uma vez por ano, na primeira passagem entre 1 e 15 de Agosto, a associados `activo` |
+| `14_inscricoes_antecipadas` | manual, por agora | o documento deixa-o por decidir |
+| `15_propostas_programacao` | manual | — |
+| `16_renovacao_quota` | automático | §16.7 |
+| `17_lembrete_quota` | automático | §16.7 |
+| `18_quota_paga_recibo` | manual | — |
+
+Regras de envio:
+- Todos os emails começam por "Olá {primeiro_nome}". Os campos `{entre_chavetas}` vêm do pedido (`primeiro_nome`, `nome_completo`, `email`, `aniversario`, `data_pedido`), da quota ou da admissão (`ano`, `valor_quota`) e da configuração (`link_pedido_adesao`, `IBAN`, `titular_conta`, `valor_quota`, `assinatura`, `proxima_sessao`, `mes_regresso`, `consequencia_90_dias`). O `{valor_quota}` dos emails do pedido é o do ano corrente; o dos emails 16 e 17 é o da linha da quota. Os valores escrevem-se "40 €"; as datas por extenso ("5 de Novembro de 2026"). Para os associados, nome e email vêm do pedido e, sem pedido, do contacto.
+- Uma linha do corpo que comece por `[Só até 31/12/2026] ` só entra no email se for enviado até essa data (a marca sai do texto); depois, a linha desaparece. É o caso da frase do fundador no email 4.
+- **Um email com um campo por preencher não sai**: fica registado como `falhou`, com a lista dos campos em falta, e a função tenta de novo no dia seguinte. É assim que o email 4 espera pelo IBAN e o email 8 por `{consequencia_90_dias}`.
+- Nunca o mesmo email-tipo duas vezes ao mesmo pedido ou associado no mesmo período (§16.9). Um envio que falhou não conta: tenta-se de novo.
+- Pedidos: em cada passagem sai, no máximo, um email por pedido. O 4 vem primeiro; sem o 4 enviado, não há lembretes. Sai só o lembrete do intervalo em que o pedido está (10–29, 30–59, 60–89, 90–119 dias); um intervalo que passe sem envio não se recupera. No período do 3-A, o 3-A passa à frente do lembrete do dia.
+- Um email-tipo com `activo` falso nunca sai.
+- Os emails manuais (1, 11, 14, 15, 18): na fase dos ecrãs, o admin mostra o texto já preenchido para copiar; o envio é feito fora da aplicação.
+- Limites do Resend no plano gratuito (100 emails por dia, 2 por segundo): a função espera entre envios; o que passar do limite fica `falhou` e sai no dia seguinte (o 12 perde-se se falhar no dia).
+
+### 16.9 Modelo de dados (migração 008)
+```
+pedidos_adesao   id, tally_id (único), data_pedido, nome_completo, nome_emails, email (citext),
+                 aniversario (text 'dd/mm'), primeiro_contacto, newsletter, consentimento,
+                 estado, data_pagamento, pagamento_confirmado_por (perfis),
+                 contacto_id (contactos), notas, created_at, updated_at
+associados       id, contacto_id (único), pedido_id, numero (sequência), tipo ('efectivo' | 'aderente'),
+                 fundador, data_admissao, admitido_por (perfis), estado ('activo' | 'suspenso' | 'saido'),
+                 created_at
+quotas           id, associado_id, ano, valor, estado ('paga' | 'nao_paga'), data_pagamento,
+                 recibo_numero, recibo_data, created_at; (associado_id, ano) único
+emails_tipo      chave, nome, quando, assunto, corpo, automatico, activo, updated_at
+emails_enviados  id, email_tipo, pedido_id | associado_id (exactamente um), periodo,
+                 destinatario, assunto, corpo, enviado_em, estado ('a_enviar' | 'enviado' | 'falhou'),
+                 resposta_provider
+configuracao     chave, valor, descricao, updated_at
+```
+Regras:
+- `aniversario` é texto `dd/mm`, validado na base (dia e mês existentes, 29/02 aceite). Não existe "data sem ano" no Postgres, e uma data com um ano inventado convida a cálculos de idade que ninguém autorizou; `dd/mm` é o que o formulário pede e o que o email mostra.
+- **Unicidade dos envios**: índice único em `(email_tipo, pedido_id, associado_id, periodo)`, com nulos iguais, só para as linhas que não falharam. `periodo` é vazio nos emails que saem uma vez na vida do pedido ou do associado (3-A, 4 a 10), o ano nos anuais (`2027` para 12, 13 e 16) e o ano e o trimestre no 17 (`2028-T2`). Assim, o 12 e o 13 repetem-se uma vez por ano, o 17 uma vez por trimestre, e os outros nunca.
+- **Reserva antes do envio**: a função grava primeiro a linha como `a_enviar` e só depois chama o Resend; se a linha já existir, não envia. Duas passagens ao mesmo tempo (o webhook e a função diária) nunca enviam o mesmo email duas vezes. Se a função morrer entre a reserva e a resposta, a linha fica `a_enviar` e bloqueia esse envio até a direcção a ver: prefere-se um email a menos a um email repetido.
+- O pedido liga-se a um contacto do Rede (`contacto_id`), como faz a vista "Interessados": o webhook procura um contacto pessoa com o mesmo email (o mais antigo, se houver vários); se existir, acrescenta-lhe a etiqueta `associado` e, se faltar, `pedido_adesao_em`; se não existir, cria-o (nome completo, email, etiqueta `associado`, `pedido_adesao_em` igual ao dia do pedido, `person_id` se o email existir em `people`, estado `a_avaliar`, origem "Pedido de adesão (Tally)"). `people` nunca é alterada.
+- Apagar um pedido apaga os seus envios. Um associado e as suas quotas não se apagam por cascata: nem apagando o contacto (a base recusa), nem apagando o pedido (o associado fica com `pedido_id` vazio).
+- `updated_at` é actualizado por quem grava (funções ou aplicação), sem triggers.
+- Listas fechadas por `check`, como no Rede.
+
+### 16.10 Configuração (tabela `configuracao`, editável no admin)
+`iban`, `titular_conta`, `assinatura` ("A equipa das Matinés Pensantes"), `link_pedido_adesao` (`https://tally.so/r/BEaMqN`), `proxima_sessao`, `valor_quota_2026` (40), `valor_quota_2027` (40), e ainda `mes_regresso` (email 13), `consequencia_90_dias` (email 8) e `data_ultimos_dias_fundador` (email 3-A, 2026-12-15). Os valores sem omissão ficam vazios até alguém os preencher; um valor vazio impede os emails que o usam (§16.8).
+
+### 16.11 Segurança e acesso
+- As tabelas novas têm RLS com acesso total para `authenticated`, como no Rede; nada para `anon`.
+- As duas funções escrevem com a chave de serviço injectada pela Supabase (§16.1). Os segredos ficam nos segredos das Edge Functions, nunca no código: `RESEND_API_KEY`, `TALLY_SIGNING_SECRET`, `CRON_SECRET`.
+- `tally-webhook` só aceita pedidos com a assinatura do Tally válida (cabeçalho `Tally-Signature`, HMAC-SHA256 do corpo com o segredo de assinatura, em base64). Responde 200 a tudo o que aceitou, incluindo repetições; 401 sem assinatura válida; 500 se não conseguiu gravar o pedido (o Tally volta a tentar).
+- `associados-diario` só corre com o cabeçalho `x-cron-secret` igual a `CRON_SECRET`. O `pg_cron` lê o segredo e o endereço do projecto do Vault da Supabase; nada disso fica em ficheiros versionados.
+- As duas funções correm sem verificação de JWT da Supabase (o Tally e o `pg_net` não têm sessão); a protecção está na assinatura e no segredo.
+- A Vera entra com conta própria no Supabase Auth, criada à mão, e com a sua linha em `perfis` (migração à parte).
+
+### 16.12 Pontos em aberto
+- O que acontece ao pedido aos 90 dias (`{consequencia_90_dias}`); até lá, o email 8 não sai e não há cancelamento automático.
+- A quem vão os emails 2 e 3 ("contactos já angariados"; "quem recebeu o convite"): contactos do Rede com a etiqueta `associado`? Pessoas da vista "Interessados"? Até se decidir, estão carregados mas não saem.
+- Email 14: automático ou manual.
+- O que conta como "pagamento até 31 de Dezembro" (data da transferência ou data de entrada na conta): a direcção decide ao registar `data_pagamento`.
+- Email 4 a partir de 2028: a frase "até 31 de Dezembro de 2027".
+- O gesto "admitir" (criar o associado e a quota numa só operação) entra com os ecrãs, provavelmente como função na base numa migração nova.
+
+### 16.13 Regras de construção
+- **Migração 008 aditiva**: só cria tabelas, índices, políticas e dados iniciais das tabelas novas. As chaves estrangeiras para `contactos` e `perfis` são novas e vivem nas tabelas novas; nenhuma coluna, restrição, política, vista ou função existente muda. O `pg_cron` fica numa migração à parte (009), a correr depois de as funções estarem publicadas; a linha da Vera em `perfis` noutra (010), depois de criada a conta.
+- Funções em `supabase/functions/` (JavaScript para Deno): `tally-webhook/index.js`, `associados-diario/index.js` e o módulo comum `_shared/emails.js` (preencher campos, datas, chamar o Resend, registar). Sem SDK do Resend: a chamada é um `fetch`. A única biblioteca é a `@supabase/supabase-js`, a mesma da aplicação. `supabase/config.toml` só diz às funções onde está o ficheiro de entrada e que não verificam JWT.
+- A função diária só trabalha quando são 9 horas em Bruxelas (o `pg_cron` chama-a às 07:00 e às 08:00 UTC; uma das duas cai sempre nas 9 horas, de Verão ou de Inverno); `{"forcar": true}` no corpo faz correr a qualquer hora, para testes. Devolve um resumo do que enviou, do que falhou e porquê.
+- Ecrãs (fase seguinte): separador Associados em `/admin` (`?s=associados`), com `React.lazy`, como o Rede.
+
+### 16.14 Melhorias futuras
+- **Envio imediato dos emails 9 e 10** (registado a 5 de Novembro de 2026): o botão "Admitir" chama uma Edge Function com a sessão do utilizador (JWT verificado, conta com linha em `perfis`), que envia logo o email 9 ou 10 desse associado pelo mesmo módulo comum e o regista em `emails_enviados`. Até lá, saem na passagem seguinte da função diária (§16.8). A reserva em `emails_enviados` garante que a função diária não o repete.
