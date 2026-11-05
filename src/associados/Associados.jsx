@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom'
 import FichaCartao from '../admin/mesa/FichaCartao.jsx'
-import { PilulasFiltro } from '../admin/mesa/ListaMesa.jsx'
+import { VistasMesa } from '../admin/mesa/ListaMesa.jsx'
 import Mesa from '../admin/mesa/Mesa.jsx'
 import AssociadoFicha from './AssociadoFicha.jsx'
 import Configuracao from './Configuracao.jsx'
@@ -58,7 +58,7 @@ export default function Associados() {
   const recarga = `${pedido ?? ''}|${associado ?? ''}`
 
   const vistas = (
-    <PilulasFiltro
+    <VistasMesa
       rotulo="Vistas dos Associados"
       opcoes={VISTAS}
       valor={naMesa === 'associados' ? 'associados' : naMesa === 'pedidos' ? '' : vista}

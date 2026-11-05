@@ -41,9 +41,12 @@ export default function Pedidos({ aberto, recarga, onAbrir }) {
     return porEstado
   }, [pedidos])
 
+  // "Em aberto" e "Todos" sempre; cada estado só quando tem pedidos (ou está escolhido).
   const filtros = [
     { valor: '', rotulo: 'Em aberto', n: ESTADOS_ABERTOS.reduce((s, e) => s + (contagem[e] ?? 0), 0) },
-    ...ESTADOS_PEDIDO.map((e) => ({ valor: e.valor, rotulo: e.rotulo, n: contagem[e.valor] ?? 0 })),
+    ...ESTADOS_PEDIDO.map((e) => ({ valor: e.valor, rotulo: e.rotulo, n: contagem[e.valor] ?? 0 })).filter(
+      (f) => f.n > 0 || f.valor === filtro,
+    ),
     { valor: 'todos', rotulo: 'Todos', n: pedidos?.length ?? 0 },
   ].map((f) => ({
     valor: f.valor,
@@ -62,7 +65,7 @@ export default function Pedidos({ aberto, recarga, onAbrir }) {
     <ListaMesa
       titulo="Pedidos de adesão"
       accao={
-        <button type="button" className="mesa-botao-secundario" onClick={() => onAbrir('novo')}>
+        <button type="button" className="mesa-ligacao" onClick={() => onAbrir('novo')}>
           Criar pedido à mão
         </button>
       }

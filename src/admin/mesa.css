@@ -277,19 +277,82 @@
   text-transform: uppercase;
   color: var(--navy);
   background: #fff;
-  border: 1px solid var(--navy);
+  border: 1px solid var(--mesa-linha);
   border-radius: 999px;
   cursor: pointer;
+}
+
+.mesa-filtro:hover {
+  border-color: var(--navy);
 }
 
 .mesa-filtro[aria-pressed='true'] {
   color: #fff;
   background: var(--navy);
+  border-color: var(--navy);
 }
 
-/* Número ao lado do rótulo da pílula (pedidos por estado). */
+/* Número ao lado do rótulo da pílula (pedidos por estado), mais leve do que o rótulo. */
 .mesa-filtro-n {
+  margin-left: 0.25rem;
   font-weight: 400;
+  opacity: 0.7;
+}
+
+/* Vistas de um separador: texto em maiúsculas, a escolhida sublinhada a carmim. */
+.mesa-vistas {
+  display: flex;
+  gap: 0 1.25rem;
+  margin: 0 0 1rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--mesa-linha);
+}
+
+.mesa-vista {
+  flex: none;
+  min-height: 44px;
+  padding: 0;
+  font-family: var(--font-title);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mesa-cinzento);
+  background: none;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+}
+
+.mesa-vista:hover {
+  color: var(--navy);
+}
+
+.mesa-vista[aria-pressed='true'] {
+  color: var(--navy);
+  border-bottom-color: var(--carmine);
+}
+
+/* Acção discreta ao lado do título da lista (uma excepção, como criar um pedido à mão). */
+.mesa-ligacao {
+  min-height: 44px;
+  padding: 0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--turquoise-dark);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.mesa-vista:focus-visible,
+.mesa-ligacao:focus-visible {
+  outline: 3px solid var(--turquoise-dark);
+  outline-offset: 2px;
 }
 
 /* Mais de uma pílula no mesmo item (Emails-tipo: manual ou automático, inactivo). */
