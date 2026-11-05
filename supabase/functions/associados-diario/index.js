@@ -10,7 +10,7 @@
 //   3. Associados activos: 9/10, 16, 17, 12, 13.
 
 import {
-  FIM_FUNDADORES, anoBissexto, camposConfiguracao, camposPedido, clienteServico, dataBruxelas, dataPorExtenso,
+  FIM_FUNDADORES, anoBissexto, camposAssociado, camposPedido, clienteServico, dataBruxelas,
   diasEntre, enviarEmail, euros, horaBruxelas, iguais, json, lerConfiguracao, lerEmailsTipo, numero,
 } from '../_shared/emails.js'
 
@@ -139,16 +139,8 @@ Deno.serve(async (req) => {
       const hojeDdMm = `${hoje.slice(8, 10)}/${hoje.slice(5, 7)}`
 
       for (const a of associados) {
-        const para = a.pedido?.email ?? a.contacto?.email ?? null
-        const primeiroNome = a.pedido?.nome_emails?.trim() || a.contacto?.nome?.trim().split(/\s+/)[0]
-        const comuns = {
-          ...camposConfiguracao(config, ano),
-          primeiro_nome: primeiroNome,
-          nome_completo: a.pedido?.nome_completo ?? a.contacto?.nome,
-          email: para,
-          aniversario: a.pedido?.aniversario,
-          data_pedido: a.pedido ? dataPorExtenso(dataBruxelas(a.pedido.data_pedido)) : null,
-        }
+        const comuns = camposAssociado(a, config, hoje)
+        const para = comuns.email
         const quem = `n.º ${a.numero}`
         const base = { associadoId: a.id, para, quem }
         const minhas = quotasDe(a.id)

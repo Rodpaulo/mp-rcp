@@ -1,13 +1,15 @@
 // Módulo comum das funções dos Associados (SPEC §16).
-// Datas de Bruxelas, campos {entre_chavetas}, chamada ao Resend e registo em
-// emails_enviados. Corre em Deno, nas Edge Functions da Supabase.
+// Chamada ao Resend e registo em emails_enviados. Corre em Deno, nas Edge Functions
+// da Supabase. Datas e campos {entre_chavetas} vêm de campos.js, partilhado com o admin.
 // Segredos: lidos do ambiente, nunca escritos aqui.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { preencher, vazio } from './campos.js'
+
+export * from './campos.js'
 
 export const REMETENTE = 'Matinés Pensantes <geral@matinespensantes.org>'
 export const RESPONDER_PARA = 'geral@matinespensantes.org'
-export const FIM_FUNDADORES = '2026-12-31'
 
 // ---------- Cliente com a chave de serviço ---------------------------
 // A Supabase injecta SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY no ambiente
@@ -18,65 +20,6 @@ export function clienteServico() {
   const chave = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   if (!url || !chave) throw new Error('Faltam SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY no ambiente.')
   return createClient(url, chave, { auth: { persistSession: false, autoRefreshToken: false } })
-}
-
-// ---------- Datas (sempre no fuso de Bruxelas) ------------------------
-
-const FUSO = 'Europe/Brussels'
-const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-
-function partes(data) {
-  const p = {}
-  for (const { type, value } of new Intl.DateTimeFormat('en-GB', {
-    timeZone: FUSO, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23',
-  }).formatToParts(data)) p[type] = value
-  return p
-}
-
-// 'AAAA-MM-DD' do dia em Bruxelas.
-export function dataBruxelas(instante = new Date()) {
-  const p = partes(instante instanceof Date ? instante : new Date(instante))
-  return `${p.year}-${p.month}-${p.day}`
-}
-
-export function horaBruxelas(instante = new Date()) {
-  return Number(partes(instante).hour)
-}
-
-// Dias de calendário entre dois 'AAAA-MM-DD'.
-export function diasEntre(de, ate) {
-  return Math.round((Date.parse(`${ate}T00:00:00Z`) - Date.parse(`${de}T00:00:00Z`)) / 86400000)
-}
-
-// '2026-11-05' → '5 de Novembro de 2026' (como em src/admin/text.js).
-export function dataPorExtenso(dia) {
-  if (!dia) return null
-  const [a, m, d] = dia.slice(0, 10).split('-').map(Number)
-  return `${d} de ${MESES[m - 1]} de ${a}`
-}
-
-export function anoBissexto(ano) {
-  return (ano % 4 === 0 && ano % 100 !== 0) || ano % 400 === 0
-}
-
-// ---------- Valores --------------------------------------------------
-
-// '40' ou 40 → '40 €'; '40,5' → '40,50 €'. Vazio ou inválido → null.
-export function euros(valor) {
-  const n = numero(valor)
-  if (n === null) return null
-  return `${Number.isInteger(n) ? String(n) : n.toFixed(2).replace('.', ',')} €`
-}
-
-export function numero(valor) {
-  if (valor === null || valor === undefined || String(valor).trim() === '') return null
-  const n = Number(String(valor).trim().replace(',', '.'))
-  return Number.isFinite(n) ? n : null
-}
-
-function vazio(v) {
-  return v === null || v === undefined || String(v).trim() === ''
 }
 
 // ---------- Configuração e emails-tipo --------------------------------
@@ -93,62 +36,6 @@ export async function lerEmailsTipo(sb) {
   const { data, error } = await sb.from('emails_tipo').select('chave, assunto, corpo, activo')
   if (error) throw new Error(`emails_tipo: ${error.message}`)
   return Object.fromEntries(data.map((t) => [t.chave, t]))
-}
-
-// Campos que vêm da configuração. {valor_quota} é o do ano dado.
-export function camposConfiguracao(config, ano) {
-  return {
-    link_pedido_adesao: config.link_pedido_adesao,
-    IBAN: config.iban,
-    titular_conta: config.titular_conta,
-    assinatura: config.assinatura,
-    proxima_sessao: config.proxima_sessao,
-    mes_regresso: config.mes_regresso,
-    consequencia_90_dias: config.consequencia_90_dias,
-    valor_quota: euros(config[`valor_quota_${ano}`]),
-  }
-}
-
-// Campos de um pedido de adesão, mais os da configuração do ano de hoje.
-export function camposPedido(pedido, config, hoje) {
-  return {
-    ...camposConfiguracao(config, hoje.slice(0, 4)),
-    primeiro_nome: pedido.nome_emails?.trim(),
-    nome_completo: pedido.nome_completo?.trim(),
-    email: pedido.email,
-    aniversario: pedido.aniversario,
-    data_pedido: dataPorExtenso(dataBruxelas(pedido.data_pedido)),
-  }
-}
-
-// ---------- Preencher {campos} ----------------------------------------
-
-const MARCA_ATE = /^\[Só até (\d{2})\/(\d{2})\/(\d{4})\] /
-
-// Devolve { texto, emFalta }. Um campo vazio ou desconhecido fica em emFalta
-// e o email não deve sair (SPEC 16.8). Uma linha marcada "[Só até dd/mm/aaaa] "
-// só fica se hoje for até essa data, e perde a marca.
-export function preencher(modelo, campos, hoje) {
-  const emFalta = new Set()
-  const linhas = []
-  for (const linha of String(modelo).replace(/\r\n?/g, '\n').split('\n')) {
-    const m = linha.match(MARCA_ATE)
-    if (m) {
-      if (hoje > `${m[3]}-${m[2]}-${m[1]}`) continue
-      linhas.push(linha.slice(m[0].length))
-    } else {
-      linhas.push(linha)
-    }
-  }
-  const texto = linhas.join('\n').replace(/\n{3,}/g, '\n\n').replace(/\{([A-Za-z0-9_]+)\}/g, (todo, nome) => {
-    const v = campos[nome]
-    if (vazio(v)) {
-      emFalta.add(nome)
-      return todo
-    }
-    return String(v).trim()
-  })
-  return { texto, emFalta: [...emFalta] }
 }
 
 // HTML mínimo a partir do texto: parágrafos, linhas e ligações.

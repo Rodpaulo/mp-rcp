@@ -471,13 +471,54 @@ Regras:
 - Email 14: automático ou manual.
 - O que conta como "pagamento até 31 de Dezembro" (data da transferência ou data de entrada na conta): a direcção decide ao registar `data_pagamento`.
 - Email 4 a partir de 2028: a frase "até 31 de Dezembro de 2027".
-- O gesto "admitir" (criar o associado e a quota numa só operação) entra com os ecrãs, provavelmente como função na base numa migração nova.
+- O gesto "admitir": decidido a 5 de Novembro de 2026, função `admitir_pedido` na migração 011 (§16.15).
 
 ### 16.13 Regras de construção
 - **Migração 008 aditiva**: só cria tabelas, índices, políticas e dados iniciais das tabelas novas. As chaves estrangeiras para `contactos` e `perfis` são novas e vivem nas tabelas novas; nenhuma coluna, restrição, política, vista ou função existente muda. O `pg_cron` fica numa migração à parte (009), a correr depois de as funções estarem publicadas; a linha da Vera em `perfis` noutra (010), depois de criada a conta.
 - Funções em `supabase/functions/` (JavaScript para Deno): `tally-webhook/index.js`, `associados-diario/index.js` e o módulo comum `_shared/emails.js` (preencher campos, datas, chamar o Resend, registar). Sem SDK do Resend: a chamada é um `fetch`. A única biblioteca é a `@supabase/supabase-js`, a mesma da aplicação. `supabase/config.toml` só diz às funções onde está o ficheiro de entrada e que não verificam JWT.
 - A função diária só trabalha quando são 9 horas em Bruxelas (o `pg_cron` chama-a às 07:00 e às 08:00 UTC; uma das duas cai sempre nas 9 horas, de Verão ou de Inverno); `{"forcar": true}` no corpo faz correr a qualquer hora, para testes. Devolve um resumo do que enviou, do que falhou e porquê.
-- Ecrãs (fase seguinte): separador Associados em `/admin` (`?s=associados`), com `React.lazy`, como o Rede.
+- Ecrãs: separador Associados em `/admin` (`?s=associados`), com `React.lazy`, como o Rede (§16.15).
 
 ### 16.14 Melhorias futuras
 - **Envio imediato dos emails 9 e 10** (registado a 5 de Novembro de 2026): o botão "Admitir" chama uma Edge Function com a sessão do utilizador (JWT verificado, conta com linha em `perfis`), que envia logo o email 9 ou 10 desse associado pelo mesmo módulo comum e o regista em `emails_enviados`. Até lá, saem na passagem seguinte da função diária (§16.8). A reserva em `emails_enviados` garante que a função diária não o repete.
+
+### 16.15 Ecrãs do separador Associados (passo 2, 5 de Novembro de 2026)
+
+**Organização**, como o Rede: código em `src/associados/`, com um `api.js` (o único ficheiro que fala com a Supabase), CSS próprio (`Associados.css`) e `React.lazy` a partir de `Admin.jsx`. O preenchimento dos campos é o mesmo ficheiro que as Edge Functions usam, `supabase/functions/_shared/campos.js`, sem importações: a pré-visualização mostra exactamente o que o Resend envia.
+
+**Navegação** por parâmetros no endereço:
+```
+?s=associados                    pedidos (vista por omissão); &st=<estado> filtra
+?s=associados&p=novo             criar pedido à mão
+?s=associados&p=<id>             ficha do pedido
+?s=associados&v=associados       associados
+?s=associados&a=<id>             ficha do associado
+?s=associados&v=emails           emails-tipo
+?s=associados&e=<chave>          editar um email-tipo, com pré-visualização
+?s=associados&v=config           configuração
+?s=associados&v=enviados         últimos 100 envios
+```
+
+**Pedidos**
+- Lista por estado, com a contagem de cada um; por omissão, os pedidos em aberto (`recebido`, `instrucoes_enviadas`, `pago`). O mais recente primeiro.
+- Ficha: os dados do pedido, o contacto do Rede ligado (com ligação para a ficha), o associado (depois de admitido), os emails enviados e os gestos, cada um só no estado em que faz sentido:
+  - **Pagamento confirmado** (`recebido`, `instrucoes_enviadas`): data do pagamento, hoje por omissão, nunca no futuro. Passa a `pago` e grava `pagamento_confirmado_por` com a conta autenticada.
+  - **Admitir** (`pago`): tipo (`efectivo` por omissão ou `aderente`); mostra antes se fica fundador e que quota fica paga. Chama `admitir_pedido` (migração 011), que faz tudo numa só operação: liga ou cria o contacto, cria o associado com o número seguinte, decide o fundador pela data do pagamento, cria a quota paga com o valor da configuração e passa o pedido a `admitido`. O email 9 ou 10 não se grava aqui: a ficha diz que sai na passagem seguinte da função diária, às 9h (§16.14 regista o envio imediato como melhoria futura).
+  - **Saídas** (`recebido`, `instrucoes_enviadas`, `pago`): Desistiu, Não admitido, Cancelado, com nota obrigatória. A nota entra em `notas` com a data e o nome de quem a escreveu.
+- **Criar pedido à mão** é uma excepção: os pedidos de Maio não se criam à mão; recebem o email 1 e entram pelo Tally. Campos: os do formulário e a data do pedido (hoje por omissão). O `tally_id` fica `manual-<identificador>`. O contacto liga-se ou cria-se como no webhook. A caixa **"Já recebeu os dados de pagamento"** regista o email 4 como enviado à mão (estado `enviado`, resposta "Registado à mão no admin") e passa o pedido a `instrucoes_enviadas`; sem a caixa, o email 4 sai na passagem seguinte da função diária. Um email com um pedido em aberto não deixa criar outro.
+
+**Associados**
+- Lista: número, nome, tipo, fundador, estado e a quota do ano. "Ano da quota" é 2027 até ao fim de 2027 (o primeiro exercício) e o ano corrente a partir de 2028.
+- Ficha: dados, contacto e pedido ligados, quotas e emails enviados. **Registar recibo** numa quota paga: número e data (hoje por omissão). Marcar como pagas as quotas abertas a partir de 2028 fica para quando houver quotas por pagar.
+
+**Emails-tipo**
+- Lista dos 19, com o envio (automático ou manual) e o "quando".
+- Edição do assunto e do corpo, com a lista dos campos disponíveis e o que cada um contém. Gravar actualiza `updated_at`.
+- **Pré-visualização** preenchida com dados reais. A fonte depende do email: um contacto do Rede com a etiqueta `associado` e sem pedido (1, 2, 3), um pedido (3-A a 8) ou um associado (9 a 18, com a quota mais recente para `{ano}`, `{valor_quota}` e `{numero_recibo}`). Cada campo do email aparece numa caixa com o valor encontrado, que se pode mudar antes de copiar; os que não têm valor (`{data_limite}`, `{link_sugestoes}`, …) aparecem vazios e marcados. A pré-visualização usa o texto que está a ser editado, mesmo antes de gravar.
+- **Copiar assunto** e **Copiar texto preenchido** nos manuais (1, 11, 14, 15, 18), só com todos os campos preenchidos. Copiar não regista envio.
+
+**Configuração**: as chaves, com a descrição; cada valor grava-se à parte. "Acrescentar chave" para os anos seguintes (`valor_quota_2028`, …).
+
+**Emails enviados**: os últimos 100, o mais recente primeiro: data, email-tipo, destinatário, estado e, quando falhou, a resposta (campos em falta ou erro do Resend), com ligação para o pedido ou o associado. Uma linha `a_enviar` com mais de 10 minutos pode ser marcada como falhada ("Libertar"), para a função diária tentar de novo (§16.9).
+
+**Regras**: o módulo escreve só nas tabelas da migração 008, em `contactos` (só ligar ou criar o contacto do pedido, como o webhook) e chama `admitir_pedido`; lê `perfis` e `people` (o `person_id` do contacto novo). Datas por extenso com `formatDate`. Sem dependências novas.
