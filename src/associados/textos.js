@@ -43,6 +43,24 @@ export function nomeDoAssociado(a) {
   return a.pedido?.nome_completo ?? a.contacto?.nome ?? '—'
 }
 
+// ---------- Interessados (SPEC 16.16) ----------
+
+export const DIAS_ATE_EMAIL_3 = 14 // como na função diária
+
+// Nome de um interessado; sem nome em people, assinala-se.
+export function nomeDoInteressado(i) {
+  return i.name?.trim() || 'Sem nome'
+}
+
+// Etapa do funil, para a pílula da lista (as cores são as do mapa único, SPEC 17.5).
+export function etapaInteressado(i) {
+  if (i.pedido) return { estado: 'admitido', rotulo: 'Com pedido' }
+  if (i.email3?.estado === 'enviado') return { estado: 'instrucoes_enviadas', rotulo: 'Email 3 enviado' }
+  if (i.email2?.estado === 'enviado') return { estado: 'instrucoes_enviadas', rotulo: 'Email 2 enviado' }
+  if (i.email2?.estado === 'falhou') return { estado: 'falhou', rotulo: 'Email 2 falhou' }
+  return { estado: 'recebido', rotulo: 'Email 2 por enviar' }
+}
+
 export function estadoDaQuota(a, ano) {
   const q = a.quotas.find((item) => item.ano === ano)
   if (!q) return 'sem quota'
@@ -62,7 +80,8 @@ export const MANUAIS = ['01_convite_pendentes', '11_recibo_adesao', '14_inscrico
 // De onde vêm os dados da pré-visualização de cada email.
 export function fonteDoEmail(chave) {
   const n = Number(chave.slice(0, 2))
-  if (n <= 2 || chave.startsWith('03_')) return 'contacto'
+  if (n === 2 || chave.startsWith('03_')) return 'interessado'
+  if (n === 1) return 'contacto'
   if (n <= 8) return 'pedido'
   return 'associado'
 }
@@ -70,6 +89,7 @@ export function fonteDoEmail(chave) {
 // Título da lista de escolha da pré-visualização.
 export const FONTES = {
   contacto: 'Escolhe um contacto do Rede (etiqueta associado, sem pedido de adesão)',
+  interessado: 'Escolhe um interessado (sem pedido de adesão)',
   pedido: 'Escolhe um pedido de adesão',
   associado: 'Escolhe um associado',
 }

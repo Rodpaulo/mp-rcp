@@ -110,6 +110,17 @@ export function camposContacto(contacto, config, hoje) {
   }
 }
 
+// Interessado de people (emails 2 e 3, SPEC 16.16). people.name pode faltar (quem entra só
+// com o email): então o primeiro nome é a parte do email antes do @.
+export function camposPessoa(pessoa, config, hoje) {
+  return {
+    ...camposConfiguracao(config, hoje.slice(0, 4)),
+    primeiro_nome: primeiraPalavra(pessoa.name) || String(pessoa.email ?? '').split('@')[0] || null,
+    nome_completo: pessoa.name?.trim() || null,
+    email: pessoa.email,
+  }
+}
+
 // Associado (emails 9 a 18): nome e email do pedido e, sem pedido, do contacto.
 // `associado` traz `pedido` e `contacto` embutidos; `quota`, se vier, dá {ano}, {valor_quota}
 // e {numero_recibo}.

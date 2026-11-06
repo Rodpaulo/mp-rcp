@@ -4,7 +4,7 @@ import { listarUltimosEnvios } from './api.js'
 import Envios from './Envios.jsx'
 
 // Os últimos 100 envios: para perceber porque é que algo não saiu (SPEC 16.15).
-export default function EmailsEnviados({ onAbrirPedido, onAbrirAssociado }) {
+export default function EmailsEnviados({ onAbrirPedido, onAbrirAssociado, onAbrirInteressado }) {
   const [envios, setEnvios] = useState(null)
   const [erro, setErro] = useState(false)
   const [so, setSo] = useState('') // '' | 'falhou'
@@ -25,6 +25,10 @@ export default function EmailsEnviados({ onAbrirPedido, onAbrirAssociado }) {
     e.pedido_id ? (
       <button type="button" className="assoc-ligacao-texto" onClick={() => onAbrirPedido(e.pedido_id)}>
         pedido
+      </button>
+    ) : e.person_id ? (
+      <button type="button" className="assoc-ligacao-texto" onClick={() => onAbrirInteressado(e.person_id)}>
+        interessado
       </button>
     ) : (
       <button type="button" className="assoc-ligacao-texto" onClick={() => onAbrirAssociado(e.associado_id)}>

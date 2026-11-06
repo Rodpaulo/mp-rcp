@@ -77,18 +77,22 @@ export async function enviarResend({ para, assunto, texto }) {
 
 // ---------- Enviar e registar ----------------------------------------
 
-// Envia um email-tipo a um pedido ou a um associado, uma só vez por período.
+// Envia um email-tipo a um pedido, a um associado ou a uma pessoa (interessado, SPEC 16.16),
+// uma só vez por período.
 // 1. Se já houver um envio que não falhou → 'ja_enviado'.
 // 2. Campos em falta → regista 'falhou' com a lista, não envia.
 // 3. Reserva a linha ('a_enviar'); se outro processo a reservou → 'ja_enviado'.
 // 4. Chama o Resend e grava 'enviado' ou 'falhou'.
 // Devolve { resultado: 'enviado' | 'falhou' | 'ja_enviado' | 'inactivo', motivo? }.
-export async function enviarEmail(sb, { tipo, pedidoId = null, associadoId = null, periodo = '', para, campos, hoje }) {
+export async function enviarEmail(sb, { tipo, pedidoId = null, associadoId = null, personId = null, periodo = '', para, campos, hoje }) {
   if (!tipo) return { resultado: 'falhou', motivo: 'Email-tipo inexistente.' }
   if (!tipo.activo) return { resultado: 'inactivo' }
 
   let q = sb.from('emails_enviados').select('id').eq('email_tipo', tipo.chave).eq('periodo', periodo).neq('estado', 'falhou')
-  q = pedidoId ? q.eq('pedido_id', pedidoId).is('associado_id', null) : q.eq('associado_id', associadoId).is('pedido_id', null)
+  // A base garante um só destino por linha (pedido, associado ou pessoa).
+  if (pedidoId) q = q.eq('pedido_id', pedidoId)
+  else if (associadoId) q = q.eq('associado_id', associadoId)
+  else q = q.eq('person_id', personId)
   const { data: existentes, error: erroLer } = await q.limit(1)
   if (erroLer) throw new Error(`emails_enviados: ${erroLer.message}`)
   if (existentes.length) return { resultado: 'ja_enviado' }
@@ -100,6 +104,8 @@ export async function enviarEmail(sb, { tipo, pedidoId = null, associadoId = nul
     email_tipo: tipo.chave,
     pedido_id: pedidoId,
     associado_id: associadoId,
+    // person_id só quando há pessoa: as gravações de pedidos e associados não dependem da migração 013.
+    ...(personId ? { person_id: personId } : {}),
     periodo,
     destinatario: vazio(para) ? '(sem email)' : para,
     assunto: assunto.texto,

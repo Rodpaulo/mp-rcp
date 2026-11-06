@@ -1,11 +1,11 @@
 // Números da barra do separador Associados (SPEC 17.3), com as leituras que o módulo já faz.
 
-import { ESTADOS_ABERTOS, listarAssociados, listarPedidos, listarUltimosEnvios } from './api.js'
+import { ESTADOS_ABERTOS, listarInteressados, listarPedidos, listarUltimosEnvios } from './api.js'
 
 // Entre os últimos 100 envios: os falhados ou presos sem envio bem-sucedido posterior do mesmo
-// email-tipo, ao mesmo pedido ou associado, no mesmo período. Cada email conta uma vez.
+// email-tipo, ao mesmo pedido, associado ou interessado, no mesmo período. Cada email conta uma vez.
 export function emailsQueNaoSairam(envios) {
-  const chave = (e) => `${e.email_tipo}|${e.pedido_id ?? ''}|${e.associado_id ?? ''}|${e.periodo}`
+  const chave = (e) => `${e.email_tipo}|${e.pedido_id ?? ''}|${e.associado_id ?? ''}|${e.person_id ?? ''}|${e.periodo}`
   const ultimoEnviado = new Map()
   for (const e of envios) {
     if (e.estado !== 'enviado') continue
@@ -22,11 +22,11 @@ export function emailsQueNaoSairam(envios) {
 }
 
 export async function lerNumerosAssociados() {
-  const [pedidos, associados, envios] = await Promise.all([listarPedidos(), listarAssociados(), listarUltimosEnvios()])
+  const [pedidos, interessados, envios] = await Promise.all([listarPedidos(), listarInteressados(), listarUltimosEnvios()])
   return [
     { rotulo: 'Pedidos em aberto', numero: pedidos.filter((p) => ESTADOS_ABERTOS.includes(p.estado)).length },
     { rotulo: 'Pagos por admitir', numero: pedidos.filter((p) => p.estado === 'pago').length },
-    { rotulo: 'Associados', numero: associados.filter((a) => a.estado === 'activo').length },
+    { rotulo: 'Interessados sem pedido', numero: interessados.filter((i) => !i.pedido).length },
     { rotulo: 'Emails que não saíram', numero: emailsQueNaoSairam(envios), pedeAccao: true },
   ]
 }

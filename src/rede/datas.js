@@ -14,11 +14,6 @@ export function hoje() {
 // Data por extenso com o mês em maiúscula, como no manual da marca: a mesma regra do separador RCP.
 export { formatDate as porExtenso } from '../admin/text.js'
 
-// Dia local de um instante da base (timestamptz), por exemplo a data do interesse em ser associado.
-export function diaLocal(instante) {
-  return paraIso(new Date(instante))
-}
-
 // 29 de Fevereiro + 12 meses dá 28 de Fevereiro, não 1 de Março.
 export function somarMeses(isoDate, meses) {
   const [ano, mes, dia] = isoDate.split('-').map(Number)

@@ -187,26 +187,8 @@ export async function listarEdicoesComCheckin(personId) {
     .map((edicao) => edicao.code)
 }
 
-// Quem marcou "Quero ser associado" na página de entrada (migração 006), o mais recente primeiro,
-// com o contacto do Rede já ligado (person_id), se existir.
+// Quem marcou "Quero ser associado" na página de entrada (migração 006): só para o número da barra
+// do Rede. A vista passou aos Associados (SPEC 16.16).
 export async function listarInteressados() {
-  const pessoas = semErro(
-    await supabase
-      .from('people')
-      .select('id, email, name, associado_interesse_at')
-      .eq('associado_interesse', true)
-      .order('associado_interesse_at', { ascending: false }),
-  )
-  if (pessoas.length === 0) return pessoas
-  const ligados = semErro(
-    await supabase
-      .from('contactos')
-      .select('id, person_id')
-      .in(
-        'person_id',
-        pessoas.map((pessoa) => pessoa.id),
-      ),
-  )
-  const contactoPorPessoa = new Map(ligados.map((contacto) => [contacto.person_id, contacto.id]))
-  return pessoas.map((pessoa) => ({ ...pessoa, contacto_id: contactoPorPessoa.get(pessoa.id) ?? null }))
+  return semErro(await supabase.from('people').select('id').eq('associado_interesse', true))
 }

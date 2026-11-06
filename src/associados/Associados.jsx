@@ -7,6 +7,8 @@ import Configuracao from './Configuracao.jsx'
 import EmailsEnviados from './EmailsEnviados.jsx'
 import EmailsTipo from './EmailsTipo.jsx'
 import EmailTipoForm from './EmailTipoForm.jsx'
+import InteressadoFicha from './InteressadoFicha.jsx'
+import Interessados from './Interessados.jsx'
 import ListaAssociados from './ListaAssociados.jsx'
 import PedidoFicha from './PedidoFicha.jsx'
 import PedidoForm from './PedidoForm.jsx'
@@ -14,6 +16,7 @@ import Pedidos from './Pedidos.jsx'
 import './Associados.css'
 
 const VISTAS = [
+  { valor: 'interessados', rotulo: 'Interessados' },
   { valor: '', rotulo: 'Pedidos' },
   { valor: 'associados', rotulo: 'Associados' },
   { valor: 'emails', rotulo: 'Emails-tipo' },
@@ -21,7 +24,9 @@ const VISTAS = [
   { valor: 'config', rotulo: 'Configuração' },
 ]
 
-// Navegação dos Associados por parâmetros no endereço (SPEC 16.15):
+// Navegação dos Associados por parâmetros no endereço (SPEC 16.15, 16.16):
+//   ?s=associados&v=interessados  interessados (por omissão, os sem pedido); &st=com-pedido|todos filtra
+//   ?s=associados&i=<person_id>   ficha do interessado
 //   ?s=associados                 pedidos (por omissão, os em aberto); &st=<estado> filtra
 //   ?s=associados&p=novo          criar pedido à mão
 //   ?s=associados&p=<id>          ficha do pedido
@@ -31,13 +36,14 @@ const VISTAS = [
 //   ?s=associados&e=<chave>       editar email-tipo, com pré-visualização
 //   ?s=associados&v=enviados      últimos 100 envios
 //   ?s=associados&v=config        configuração
-// Pedidos e associados em mesa de trabalho (SPEC 17.4): a ficha do pedido fica ao lado da lista
-// dos pedidos (com o mesmo st), a do associado ao lado da lista dos associados (v=associados).
+// Interessados, pedidos e associados em mesa de trabalho (SPEC 17.4): cada ficha ao lado da sua lista
+// (o interessado com o mesmo st, v=interessados; o pedido com o mesmo st; o associado com v=associados).
 // Emails-tipo, Emails enviados e Configuração em largura total.
 export default function Associados() {
   const [searchParams, setSearchParams] = useSearchParams()
   const pedido = searchParams.get('p')
   const associado = searchParams.get('a')
+  const interessado = searchParams.get('i')
   const email = searchParams.get('e')
   const filtro = searchParams.get('st')
   const vParam = searchParams.get('v')
@@ -51,17 +57,26 @@ export default function Associados() {
   const listaPedidos = (opcoes) => irPara(comFiltro, opcoes)
   const abrirPedido = (id, opcoes) => irPara({ ...comFiltro, p: id }, opcoes)
   const abrirAssociado = (id) => irPara({ v: 'associados', a: id })
+  const listaInteressados = () => irPara({ v: 'interessados', ...comFiltro })
+  const abrirInteressado = (id) => irPara({ v: 'interessados', ...comFiltro, i: id })
   const mudarVista = (valor) => irPara(valor ? { v: valor } : {})
 
-  // Pedidos ou associados: a lista que acompanha a ficha.
-  const naMesa = associado || vista === 'associados' ? 'associados' : pedido || vista === '' ? 'pedidos' : null
-  const recarga = `${pedido ?? ''}|${associado ?? ''}`
+  // Interessados, pedidos ou associados: a lista que acompanha a ficha.
+  const naMesa =
+    interessado || vista === 'interessados'
+      ? 'interessados'
+      : associado || vista === 'associados'
+        ? 'associados'
+        : pedido || vista === ''
+          ? 'pedidos'
+          : null
+  const recarga = `${pedido ?? ''}|${associado ?? ''}|${interessado ?? ''}`
 
   const vistas = (
     <VistasMesa
       rotulo="Vistas dos Associados"
       opcoes={VISTAS}
-      valor={naMesa === 'associados' ? 'associados' : naMesa === 'pedidos' ? '' : vista}
+      valor={naMesa === 'interessados' || naMesa === 'associados' ? naMesa : naMesa === 'pedidos' ? '' : vista}
       onMudar={mudarVista}
     />
   )
@@ -84,7 +99,11 @@ export default function Associados() {
         <div className="mesa-largo">
           {vista === 'emails' && <EmailsTipo onAbrir={(chave) => irPara({ e: chave })} />}
           {vista === 'enviados' && (
-            <EmailsEnviados onAbrirPedido={(id) => abrirPedido(id)} onAbrirAssociado={abrirAssociado} />
+            <EmailsEnviados
+              onAbrirPedido={(id) => abrirPedido(id)}
+              onAbrirAssociado={abrirAssociado}
+              onAbrirInteressado={(id) => irPara({ v: 'interessados', st: 'todos', i: id })}
+            />
           )}
           {vista === 'config' && <Configuracao />}
         </div>
@@ -93,7 +112,9 @@ export default function Associados() {
   }
 
   const lista =
-    naMesa === 'pedidos' ? (
+    naMesa === 'interessados' ? (
+      <Interessados aberto={interessado} recarga={recarga} onAbrir={abrirInteressado} />
+    ) : naMesa === 'pedidos' ? (
       <Pedidos
         aberto={pedido}
         recarga={recarga}
@@ -104,7 +125,16 @@ export default function Associados() {
     )
 
   let ficha
-  if (pedido === 'novo') {
+  if (interessado) {
+    ficha = (
+      <InteressadoFicha
+        key={interessado}
+        id={interessado}
+        onLista={listaInteressados}
+        onAbrirPedido={(id) => irPara({ p: id })}
+      />
+    )
+  } else if (pedido === 'novo') {
     ficha = <PedidoForm onVoltar={() => listaPedidos()} onGravado={(id) => abrirPedido(id, { replace: true })} />
   } else if (pedido) {
     ficha = (
@@ -123,7 +153,11 @@ export default function Associados() {
     ficha = (
       <FichaCartao>
         <p className="mesa-vazio">
-          {naMesa === 'pedidos' ? 'Escolhe um pedido na lista.' : 'Escolhe um associado na lista.'}
+          {naMesa === 'interessados'
+            ? 'Escolhe um interessado na lista.'
+            : naMesa === 'pedidos'
+              ? 'Escolhe um pedido na lista.'
+              : 'Escolhe um associado na lista.'}
         </p>
       </FichaCartao>
     )
@@ -132,7 +166,7 @@ export default function Associados() {
   return (
     <>
       {vistas}
-      <Mesa aberto={Boolean(pedido || associado)} lista={lista}>
+      <Mesa aberto={Boolean(pedido || associado || interessado)} lista={lista}>
         {ficha}
       </Mesa>
     </>

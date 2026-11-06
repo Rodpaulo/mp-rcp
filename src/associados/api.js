@@ -1,6 +1,6 @@
 // Todas as chamadas do separador Associados à Supabase passam por aqui (SPEC 16.15).
 // Escreve só nas tabelas da migração 008 e em contactos (ligar ou criar o contacto do pedido,
-// como o webhook); chama admitir_pedido (migração 011). Lê perfis e people.
+// como o webhook); chama admitir_pedido (migração 011). Lê perfis e people (os interessados).
 
 import { supabase } from '../lib/supabase.js'
 import { dataBruxelas, preencher, vazio } from '../../supabase/functions/_shared/campos.js'
@@ -255,6 +255,55 @@ export async function registarRecibo(quotaId, reciboNumero, reciboData) {
   )
 }
 
+// ---------- interessados (people, SPEC 16.16) ----------
+
+const EMAILS_FUNIL = ['02_convite_contactos', '03_ultimos_dias_sem_pedido']
+
+// Quem marcou "Quero ser associado" na página de entrada, o mais recente primeiro, com o funil:
+// o pedido mais recente com o mesmo email (se houver) e os envios dos emails 2 e 3.
+// people só se lê.
+export async function listarInteressados() {
+  const [pessoas, pedidos, envios] = await Promise.all([
+    supabase
+      .from('people')
+      .select('id, email, name, associado_interesse_at')
+      .eq('associado_interesse', true)
+      .order('associado_interesse_at', { ascending: false })
+      .then(semErro),
+    supabase.from('pedidos_adesao').select('id, email, data_pedido, estado').order('data_pedido', { ascending: false }).then(semErro),
+    supabase
+      .from('emails_enviados')
+      .select('person_id, email_tipo, estado, enviado_em')
+      .not('person_id', 'is', null)
+      .in('email_tipo', EMAILS_FUNIL)
+      .order('enviado_em')
+      .then(semErro),
+  ])
+  const pedidoPorEmail = new Map()
+  for (const p of pedidos) {
+    const chave = String(p.email).toLowerCase()
+    if (!pedidoPorEmail.has(chave)) pedidoPorEmail.set(chave, p)
+  }
+  // Para cada pessoa e email, o envio que conta: o enviado; sem ele, a última tentativa.
+  const envioDe = new Map()
+  for (const e of envios) {
+    const chave = `${e.person_id}|${e.email_tipo}`
+    if (envioDe.get(chave)?.estado !== 'enviado') envioDe.set(chave, e)
+  }
+  return pessoas.map((pessoa) => ({
+    ...pessoa,
+    pedido: pedidoPorEmail.get(String(pessoa.email).toLowerCase()) ?? null,
+    email2: envioDe.get(`${pessoa.id}|02_convite_contactos`) ?? null,
+    email3: envioDe.get(`${pessoa.id}|03_ultimos_dias_sem_pedido`) ?? null,
+  }))
+}
+
+export async function listarEnviosDaPessoa(personId) {
+  return semErro(
+    await supabase.from('emails_enviados').select(CAMPOS_ENVIO).eq('person_id', personId).order('enviado_em', { ascending: false }),
+  )
+}
+
 // ---------- emails_tipo ----------
 
 export async function listarEmailsTipo() {
@@ -278,7 +327,7 @@ export async function gravarEmailTipo(chave, { assunto, corpo }) {
   )
 }
 
-// Fonte da pré-visualização dos emails 1, 2 e 3: contactos do Rede com a etiqueta associado
+// Fonte da pré-visualização do email 1: contactos do Rede com a etiqueta associado
 // e sem pedido de adesão.
 export async function listarContactosSemPedido() {
   const [contactos, pedidos] = await Promise.all([
@@ -302,7 +351,7 @@ export function preencherEmail(tipo, campos, hoje) {
 
 // ---------- emails_enviados ----------
 
-const CAMPOS_ENVIO = 'id, email_tipo, pedido_id, associado_id, periodo, destinatario, assunto, enviado_em, estado, resposta_provider'
+const CAMPOS_ENVIO = 'id, email_tipo, pedido_id, associado_id, person_id, periodo, destinatario, assunto, enviado_em, estado, resposta_provider'
 
 export async function listarEnviosDoPedido(pedidoId) {
   return semErro(

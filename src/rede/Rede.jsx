@@ -7,17 +7,15 @@ import Contactos from './Contactos.jsx'
 import ContactoForm from './ContactoForm.jsx'
 import Ficha from './Ficha.jsx'
 import InteraccaoForm from './InteraccaoForm.jsx'
-import Interessados from './Interessados.jsx'
 import PorRever from './PorRever.jsx'
 import RevisaoForm from './RevisaoForm.jsx'
 import './Rede.css'
 
-// As quatro vistas são pílulas da coluna da lista (SPEC 17.4).
+// As três vistas são pílulas da coluna da lista (SPEC 17.4). Os interessados passaram aos Associados (SPEC 16.16).
 const VISTAS = [
   { valor: '', rotulo: 'Contactos' },
   { valor: 'por-rever', rotulo: 'Por rever' },
   { valor: 'atraso', rotulo: 'Em atraso' },
-  { valor: 'interessados', rotulo: 'Interessados' },
 ]
 
 // Parâmetros da lista: ficam quando se abre ou fecha um contacto, para a lista não mudar ao lado da ficha.
@@ -27,7 +25,6 @@ const DA_LISTA = ['v', 'q', 'e', 'st']
 //   ?s=rede                       lista de contactos
 //   ?s=rede&v=por-rever           vista "Por rever"
 //   ?s=rede&v=atraso              vista "Acções em atraso"
-//   ?s=rede&v=interessados        vista "Interessados" (quer ser associado)
 //   ?s=rede&c=novo                contacto novo
 //   ?s=rede&c=<id>                ficha do contacto
 //   ?s=rede&c=<id>&m=editar       editar contacto
@@ -81,7 +78,6 @@ export default function Rede() {
         />
       )}
       {vista === 'atraso' && <AccoesEmAtraso aberto={contacto} recarga={recarga} onAbrir={(id) => ficha(id)} />}
-      {vista === 'interessados' && <Interessados aberto={contacto} recarga={recarga} onAbrir={(id) => ficha(id)} />}
       {vista === '' && <Contactos aberto={contacto} recarga={recarga} onAbrir={(id) => ficha(id)} />}
     </ListaMesa>
   )

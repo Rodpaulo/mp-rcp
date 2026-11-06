@@ -7,10 +7,11 @@
 // Ordem de cada passagem:
 //   1. Abertura das quotas do ano (Janeiro, a partir de 2028).
 //   2. Pedidos em aberto: email 4, 3-A ou o lembrete do intervalo (um por pedido).
-//   3. Associados activos: 9/10, 16, 17, 12, 13.
+//   3. Interessados sem pedido: email 2 ou 3 (um por pessoa).
+//   4. Associados activos: 9/10, 16, 17, 12, 13.
 
 import {
-  FIM_FUNDADORES, anoBissexto, camposAssociado, camposPedido, clienteServico, dataBruxelas,
+  FIM_FUNDADORES, anoBissexto, camposAssociado, camposPedido, camposPessoa, clienteServico, dataBruxelas,
   diasEntre, enviarEmail, euros, horaBruxelas, iguais, json, lerConfiguracao, lerEmailsTipo, numero,
 } from '../_shared/emails.js'
 
@@ -22,6 +23,7 @@ const LEMBRETES = [
   [90, 120, '08_lembrete_90_dias'],
 ]
 const PRIMEIRO_ANO_ABERTURA = 2028
+const DIAS_ATE_EMAIL_3 = 14
 
 Deno.serve(async (req) => {
   const segredo = Deno.env.get('CRON_SECRET')
@@ -43,26 +45,34 @@ Deno.serve(async (req) => {
 
     // Envios que já contam (não falhados), para não perguntar à base a cada passo.
     const feitos = new Set()
-    const chave = (tipo, pedidoId, associadoId, periodo = '') => `${tipo}|${pedidoId ?? ''}|${associadoId ?? ''}|${periodo}`
+    const chave = (tipo, pedidoId, associadoId, personId, periodo = '') =>
+      `${tipo}|${pedidoId ?? ''}|${associadoId ?? ''}|${personId ?? ''}|${periodo}`
+    // Dia (Bruxelas) em que o email 2 saiu para cada pessoa: conta os 14 dias do email 3.
+    const email2Em = new Map()
     {
       const { data, error } = await sb.from('emails_enviados')
-        .select('email_tipo, pedido_id, associado_id, periodo').neq('estado', 'falhou')
+        .select('email_tipo, pedido_id, associado_id, person_id, periodo, estado, enviado_em').neq('estado', 'falhou')
       if (error) throw new Error(`emails_enviados: ${error.message}`)
-      for (const e of data) feitos.add(chave(e.email_tipo, e.pedido_id, e.associado_id, e.periodo))
+      for (const e of data) {
+        feitos.add(chave(e.email_tipo, e.pedido_id, e.associado_id, e.person_id, e.periodo))
+        if (e.email_tipo === '02_convite_contactos' && e.person_id && e.estado === 'enviado') {
+          email2Em.set(e.person_id, dataBruxelas(e.enviado_em))
+        }
+      }
     }
-    const jaFeito = (tipo, { pedidoId = null, associadoId = null, periodo = '' }) =>
-      feitos.has(chave(tipo, pedidoId, associadoId, periodo))
+    const jaFeito = (tipo, { pedidoId = null, associadoId = null, personId = null, periodo = '' }) =>
+      feitos.has(chave(tipo, pedidoId, associadoId, personId, periodo))
 
-    const enviar = async (tipoChave, { pedidoId = null, associadoId = null, periodo = '', para, campos, quem }) => {
-      const r = await enviarEmail(sb, { tipo: tipos[tipoChave], pedidoId, associadoId, periodo, para, campos, hoje })
+    const enviar = async (tipoChave, { pedidoId = null, associadoId = null, personId = null, periodo = '', para, campos, quem }) => {
+      const r = await enviarEmail(sb, { tipo: tipos[tipoChave], pedidoId, associadoId, personId, periodo, para, campos, hoje })
       const linha = { email: tipoChave, periodo: periodo || undefined, quem }
       if (r.resultado === 'enviado') {
-        feitos.add(chave(tipoChave, pedidoId, associadoId, periodo))
+        feitos.add(chave(tipoChave, pedidoId, associadoId, personId, periodo))
         relatorio.enviados.push(linha)
       } else if (r.resultado === 'falhou') {
         relatorio.falhados.push({ ...linha, motivo: r.motivo })
       } else if (r.resultado === 'ja_enviado') {
-        feitos.add(chave(tipoChave, pedidoId, associadoId, periodo))
+        feitos.add(chave(tipoChave, pedidoId, associadoId, personId, periodo))
       }
       return r.resultado
     }
@@ -122,7 +132,46 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ---------- 3. Associados activos -------------------------------
+    // ---------- 3. Interessados sem pedido (SPEC 16.16) ----------------
+    // people com associado_interesse e sem nenhum pedido com o mesmo email.
+    // Email 2 uma vez, a partir do dia seguinte ao interesse, só com IBAN e titular na
+    // configuração (sem eles, fica por enviar, sem erro). Email 3 uma vez, 14 dias depois do 2.
+    {
+      const [{ data: pessoas, error }, { data: pedidos, error: erroP }] = await Promise.all([
+        sb.from('people').select('id, email, name, associado_interesse_at').eq('associado_interesse', true),
+        sb.from('pedidos_adesao').select('email'),
+      ])
+      if (error) throw new Error(`people: ${error.message}`)
+      if (erroP) throw new Error(`pedidos_adesao: ${erroP.message}`)
+      const comPedido = new Set(pedidos.map((p) => String(p.email).toLowerCase()))
+      const contaPronta = Boolean(config.iban && config.titular_conta)
+      let porEnviar = 0
+
+      for (const pessoa of pessoas) {
+        if (comPedido.has(String(pessoa.email).toLowerCase())) continue
+        const base = { personId: pessoa.id, para: pessoa.email, campos: camposPessoa(pessoa, config, hoje), quem: pessoa.email }
+
+        if (!jaFeito('02_convite_contactos', base)) {
+          if (!pessoa.associado_interesse_at || dataBruxelas(pessoa.associado_interesse_at) >= hoje) continue
+          if (!contaPronta) {
+            porEnviar++
+            continue
+          }
+          await enviar('02_convite_contactos', base)
+          continue
+        }
+
+        const dia2 = email2Em.get(pessoa.id)
+        if (dia2 && diasEntre(dia2, hoje) >= DIAS_ATE_EMAIL_3 && !jaFeito('03_ultimos_dias_sem_pedido', base)) {
+          await enviar('03_ultimos_dias_sem_pedido', base)
+        }
+      }
+      if (porEnviar) {
+        relatorio.avisos.push(`Sem iban e titular_conta na configuração: ${porEnviar} interessado(s) com o email 2 por enviar.`)
+      }
+    }
+
+    // ---------- 4. Associados activos -------------------------------
     {
       const { data: associados, error } = await sb.from('associados')
         .select(`id, numero, fundador, estado,

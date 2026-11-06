@@ -4,10 +4,17 @@
 /* ---------- Listas ---------- */
 
 .assoc-envios,
-.assoc-quotas {
+.assoc-quotas,
+.assoc-funil {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.assoc-funil li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #D5DCE2;
+  overflow-wrap: anywhere;
 }
 
 .assoc-quotas li {

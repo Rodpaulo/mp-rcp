@@ -35,7 +35,7 @@ function separadorDe(searchParams) {
 
 // A barra lê de novo ao abrir ou fechar um item (SPEC 17.3); pesquisas e filtros não contam.
 function chaveDosNumeros(separador, searchParams) {
-  const params = ['c', 'p', 'a', 'b', 'm', ...(separador === 'associados' ? ['e'] : [])]
+  const params = ['c', 'p', 'a', 'b', 'm', ...(separador === 'associados' ? ['e', 'i'] : [])]
   return [separador, ...params.map((p) => searchParams.get(p) ?? '')].join('|')
 }
 

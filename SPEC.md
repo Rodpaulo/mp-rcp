@@ -253,7 +253,7 @@ Um CRM leve, dentro do admin, para a relação da Matinés Pensantes com oradore
 - **Vista "Acções em atraso"**: acções com prazo passado e não concluídas, cada uma com "Concluir".
 - **Acções abertas na ficha**: cada acção por concluir tem "Concluir" (a mesma confirmação da vista "Acções em atraso") e, quando o contacto tem cartão no Trello, "Abrir cartão".
 - **Cartão do Trello na ficha**: no cabeçalho do contacto, "Abrir cartão" (quando há endereço) e "Editar cartão" (acrescentar, corrigir ou retirar o endereço, que tem de começar por `https://trello.com/`).
-- **Vista "Interessados"** (30 de Outubro de 2026): as pessoas de `people` que marcaram, na página de entrada, *Quero ser associado*, com nome, email e data do pedido, e se já há um contacto ligado (`person_id`). "Criar contacto" cria em `contactos` uma pessoa com o nome (ou, sem nome, o email), o email, a etiqueta `associado`, `pedido_adesao_em` igual ao dia do pedido, `person_id` ligado e estado `a_avaliar`; com contacto ligado, o botão passa a "Abrir contacto".
+- **Vista "Interessados"** (30 de Outubro de 2026): as pessoas de `people` que marcaram, na página de entrada, *Quero ser associado*, com nome, email e data do pedido, e se já há um contacto ligado (`person_id`). "Criar contacto" cria em `contactos` uma pessoa com o nome (ou, sem nome, o email), o email, a etiqueta `associado`, `pedido_adesao_em` igual ao dia do pedido, `person_id` ligado e estado `a_avaliar`; com contacto ligado, o botão passa a "Abrir contacto". **Passou aos Associados a 6 de Novembro de 2026** (§16.16), sem "Criar contacto".
 
 ### 14.4 Fora do âmbito
 Pipeline visual (colunas, arrastar e largar); envio de email a partir da aplicação; pontuações ou classificações automáticas de contactos; gestão de quotas e pagamentos; importação automática de contactos; papéis e permissões diferentes entre o Miguel e a Ana.
@@ -293,7 +293,7 @@ Regras:
 - `updated_at` é actualizado pela aplicação ao gravar (sem triggers na base).
 - Apagar um contacto apaga as suas interacções, revisões e participações. As ligações às tabelas existentes nunca impedem uma operação actual: apagar uma pessoa em `people` limpa `person_id`; apagar uma edição apaga as participações.
 - "Por rever": contactos não encerrados com `proxima_revisao` nula ou até hoje. "Acções em atraso": revisões não concluídas com `prazo` anterior a hoje.
-- "Interessados": pessoas com `people.associado_interesse` verdadeiro, a mais recente primeiro. O Rede só lê `people`; "Criar contacto" escreve só em `contactos`.
+- "Interessados": pessoas com `people.associado_interesse` verdadeiro, a mais recente primeiro. Desde 6 de Novembro de 2026 a vista está nos Associados (§16.16); o Rede só conta os interessados para a barra de números.
 - **Trello** (reescrita a 30 de Outubro de 2026, migração 007). O Rede guarda os factos: interacções, revisões, decisões, estado, participações. O cartão do Trello (quadro "Rede") guarda ideias e contexto: o que propor, o que explorar, quem é quem; é alimentado nas conversas com o Claude.
   - Um cartão por contacto, permanente, com o nome exacto do contacto. Vive enquanto o contacto não estiver `encerrada`.
   - Prazo e responsável ficam só no Rede, nunca no cartão.
@@ -403,8 +403,8 @@ Os textos são os do documento "Emails-tipo para associados" (5 de Novembro de 2
 | Chave | Envio | Quando sai (pela função diária, salvo o 4) |
 |---|---|---|
 | `01_convite_pendentes` | manual | — |
-| `02_convite_contactos` | automático, por decidir | ainda não sai: falta decidir a quem (§16.12) |
-| `03_ultimos_dias_sem_pedido` | automático, por decidir | ainda não sai: depende do 2 |
+| `02_convite_contactos` | automático | uma vez, a cada interessado sem pedido, a partir do dia seguinte ao registo do interesse, só com `iban` e `titular_conta` preenchidos (§16.16) |
+| `03_ultimos_dias_sem_pedido` | automático | uma vez, 14 dias depois do 2, a quem continuar sem pedido (§16.16) |
 | `03a_ultimos_dias_sem_pagamento` | automático | uma vez, entre `data_ultimos_dias_fundador` (15 de Dezembro de 2026) e 31 de Dezembro de 2026, a cada pedido `recebido` ou `instrucoes_enviadas` |
 | `04_pedido_recebido` | automático | logo, pelo webhook; se falhar, na passagem seguinte |
 | `05`…`08` lembretes | automático | aos 10, 30, 60 e 90 dias após a data do pedido, só com o estado `recebido` ou `instrucoes_enviadas` |
@@ -440,14 +440,15 @@ associados       id, contacto_id (único), pedido_id, numero (sequência), tipo 
 quotas           id, associado_id, ano, valor, estado ('paga' | 'nao_paga'), data_pagamento,
                  recibo_numero, recibo_data, created_at; (associado_id, ano) único
 emails_tipo      chave, nome, quando, assunto, corpo, automatico, activo, updated_at
-emails_enviados  id, email_tipo, pedido_id | associado_id (exactamente um), periodo,
+emails_enviados  id, email_tipo, pedido_id | associado_id | person_id (exactamente um; person_id
+                 desde a migração 013), periodo,
                  destinatario, assunto, corpo, enviado_em, estado ('a_enviar' | 'enviado' | 'falhou'),
                  resposta_provider
 configuracao     chave, valor, descricao, updated_at
 ```
 Regras:
 - `aniversario` é texto `dd/mm`, validado na base (dia e mês existentes, 29/02 aceite). Não existe "data sem ano" no Postgres, e uma data com um ano inventado convida a cálculos de idade que ninguém autorizou; `dd/mm` é o que o formulário pede e o que o email mostra.
-- **Unicidade dos envios**: índice único em `(email_tipo, pedido_id, associado_id, periodo)`, com nulos iguais, só para as linhas que não falharam. `periodo` é vazio nos emails que saem uma vez na vida do pedido ou do associado (3-A, 4 a 10), o ano nos anuais (`2027` para 12, 13 e 16) e o ano e o trimestre no 17 (`2028-T2`). Assim, o 12 e o 13 repetem-se uma vez por ano, o 17 uma vez por trimestre, e os outros nunca.
+- **Unicidade dos envios**: índice único em `(email_tipo, pedido_id, associado_id, person_id, periodo)` (o `person_id` entrou na migração 013), com nulos iguais, só para as linhas que não falharam. `periodo` é vazio nos emails que saem uma vez na vida do pedido, do associado ou do interessado (2, 3, 3-A, 4 a 10), o ano nos anuais (`2027` para 12, 13 e 16) e o ano e o trimestre no 17 (`2028-T2`). Assim, o 12 e o 13 repetem-se uma vez por ano, o 17 uma vez por trimestre, e os outros nunca.
 - **Reserva antes do envio**: a função grava primeiro a linha como `a_enviar` e só depois chama o Resend; se a linha já existir, não envia. Duas passagens ao mesmo tempo (o webhook e a função diária) nunca enviam o mesmo email duas vezes. Se a função morrer entre a reserva e a resposta, a linha fica `a_enviar` e bloqueia esse envio até a direcção a ver: prefere-se um email a menos a um email repetido.
 - O pedido liga-se a um contacto do Rede (`contacto_id`), como faz a vista "Interessados": o webhook procura um contacto pessoa com o mesmo email (o mais antigo, se houver vários); se existir, acrescenta-lhe a etiqueta `associado` e, se faltar, `pedido_adesao_em`; se não existir, cria-o (nome completo, email, etiqueta `associado`, `pedido_adesao_em` igual ao dia do pedido, `person_id` se o email existir em `people`, estado `a_avaliar`, origem "Pedido de adesão (Tally)"). `people` nunca é alterada.
 - Apagar um pedido apaga os seus envios. Um associado e as suas quotas não se apagam por cascata: nem apagando o contacto (a base recusa), nem apagando o pedido (o associado fica com `pedido_id` vazio).
@@ -467,7 +468,7 @@ Regras:
 
 ### 16.12 Pontos em aberto
 - O que acontece ao pedido aos 90 dias (`{consequencia_90_dias}`); até lá, o email 8 não sai e não há cancelamento automático.
-- A quem vão os emails 2 e 3 ("contactos já angariados"; "quem recebeu o convite"): contactos do Rede com a etiqueta `associado`? Pessoas da vista "Interessados"? Até se decidir, estão carregados mas não saem.
+- A quem vão os emails 2 e 3: decidido a 6 de Novembro de 2026, aos interessados sem pedido (§16.16).
 - Email 14: automático ou manual.
 - O que conta como "pagamento até 31 de Dezembro" (data da transferência ou data de entrada na conta): a direcção decide ao registar `data_pagamento`.
 - Email 4 a partir de 2028: a frase "até 31 de Dezembro de 2027".
@@ -488,6 +489,8 @@ Regras:
 
 **Navegação** por parâmetros no endereço:
 ```
+?s=associados&v=interessados     interessados (§16.16); &st=com-pedido | todos filtra
+?s=associados&i=<person_id>      ficha do interessado
 ?s=associados                    pedidos (vista por omissão); &st=<estado> filtra
 ?s=associados&p=novo             criar pedido à mão
 ?s=associados&p=<id>             ficha do pedido
@@ -514,7 +517,7 @@ Regras:
 **Emails-tipo**
 - Lista dos 19, com o envio (automático ou manual) e o "quando".
 - Edição do assunto e do corpo, com a lista dos campos disponíveis e o que cada um contém. Gravar actualiza `updated_at`.
-- **Pré-visualização** preenchida com dados reais. O registo escolhe-se numa lista sempre à vista, nunca escrevendo o nome; com mais de 15 registos, há uma pesquisa por cima (sem distinguir maiúsculas nem acentos). A lista depende do email: para o 1 (e o 2 e o 3), os contactos do Rede com a etiqueta `associado` e sem pedido de adesão, por nome; para os do pedido (3-A a 8), os pedidos, com nome e estado, por nome; para os do associado (9 a 18), os associados, com número e nome, por número (com a quota mais recente para `{ano}`, `{valor_quota}` e `{numero_recibo}`). Os campos que vêm do registo ou da configuração mostram-se só para leitura; os que não têm valor (`{data_limite}`, `{link_sugestoes}`, …) aparecem numa caixa para preencher, marcados. A pré-visualização usa o texto que está a ser editado, mesmo antes de gravar.
+- **Pré-visualização** preenchida com dados reais. O registo escolhe-se numa lista sempre à vista, nunca escrevendo o nome; com mais de 15 registos, há uma pesquisa por cima (sem distinguir maiúsculas nem acentos). A lista depende do email: para o 1, os contactos do Rede com a etiqueta `associado` e sem pedido de adesão, por nome; para o 2 e o 3, os interessados sem pedido, por nome (§16.16); para os do pedido (3-A a 8), os pedidos, com nome e estado, por nome; para os do associado (9 a 18), os associados, com número e nome, por número (com a quota mais recente para `{ano}`, `{valor_quota}` e `{numero_recibo}`). Os campos que vêm do registo ou da configuração mostram-se só para leitura; os que não têm valor (`{data_limite}`, `{link_sugestoes}`, …) aparecem numa caixa para preencher, marcados. A pré-visualização usa o texto que está a ser editado, mesmo antes de gravar.
 - **Copiar assunto** e **Copiar texto preenchido** nos manuais (1, 11, 14, 15, 18), só com todos os campos preenchidos. Copiar não regista envio.
 
 **Configuração**: as chaves, com a descrição; cada valor grava-se à parte. "Acrescentar chave" para os anos seguintes (`valor_quota_2028`, …).
@@ -522,6 +525,26 @@ Regras:
 **Emails enviados**: os últimos 100, o mais recente primeiro: data, email-tipo, destinatário, estado e, quando falhou, a resposta (campos em falta ou erro do Resend), com ligação para o pedido ou o associado. Uma linha `a_enviar` com mais de 10 minutos pode ser marcada como falhada ("Libertar"), para a função diária tentar de novo (§16.9).
 
 **Regras**: o módulo escreve só nas tabelas da migração 008, em `contactos` (só ligar ou criar o contacto do pedido, como o webhook) e chama `admitir_pedido`; lê `perfis` e `people` (o `person_id` do contacto novo). Datas por extenso com `formatDate`. Sem dependências novas.
+
+### 16.16 Interessados, primeira etapa do funil (6 de Novembro de 2026)
+Os interessados são as pessoas de `people` com `associado_interesse` verdadeiro: marcaram, na página de entrada, *Quero ser associado da Matinés Pensantes. Contactem-me.* (migração 006). Passam a ser a primeira etapa do funil dos Associados: interesse → email 2 → email 3 → pedido.
+
+**Ecrã**
+- A vista "Interessados" sai do Rede e entra nos Associados, como primeira vista da linha de separadores (Interessados · Pedidos · Associados · Emails-tipo · Emails enviados · Configuração). A vista por omissão continua a ser Pedidos. Mesa de trabalho como os pedidos: lista à esquerda, ficha à direita.
+- "Criar contacto" desaparece: o contacto do Rede nasce na admissão (`admitir_pedido`), como já acontece.
+- Lista: nome (ou "Sem nome"), email e data do interesse; pílula com a etapa (Email 2 por enviar, Email 2 enviado, Email 2 falhou, Email 3 enviado, Com pedido). Filtros: **Activos** (sem pedido, por omissão), **Com pedido**, **Todos**, cada um com a contagem. Tem pedido quem tem um pedido de adesão (em qualquer estado) com o mesmo email.
+- Ficha: nome, ou "sem nome" assinalado no sobretítulo e nos dados; email; o funil: interesse registado a [data]; email 2 enviado a [data], ou "por enviar" com o motivo (falta o IBAN e o titular da conta; sai a partir de amanhã; sai na passagem seguinte); email 3 enviado a [data], ou a data prevista; pedido recebido a [data], com ligação para a ficha do pedido, quando existir. Por baixo, os emails enviados à pessoa.
+- Barra de números dos Associados: o terceiro cartão passa a "Interessados sem pedido". O Rede mantém o seu cartão "Interessados" (todas as pessoas com interesse), só como número.
+
+**Regras da função diária** (`associados-diario`, depois dos pedidos e antes dos associados; no máximo um email por pessoa em cada passagem)
+- **Email 2**: a cada interessado sem pedido, uma vez, a partir do dia seguinte ao registo do interesse (dia de Bruxelas), e só se `iban` e `titular_conta` estiverem preenchidos na configuração. Sem eles, fica "por enviar", sem registo de falha; o resumo da função conta-os num aviso. Os interessados que já existiam recebem o 2 na primeira passagem depois de a configuração estar completa.
+- **Email 3**: uma vez, 14 dias (de calendário) depois do dia em que o 2 saiu, a quem continuar sem pedido.
+- O 3-A mantém-se como está (pedidos sem pagamento).
+- **Nome**: `people.name` é facultativo (vem do MailPoet; quem entra só com o email não o tem). `{primeiro_nome}` é a primeira palavra do nome e, sem nome, a parte do email antes do @. `{nome_completo}` é o nome, se houver.
+- Os envios ficam em `emails_enviados` com `person_id` (migração 013), com as mesmas regras de reserva, unicidade e nova tentativa dos outros (§16.9). Com pedido, a pessoa sai do funil: os emails 2 e 3 deixam de sair.
+- Atenção aos textos: o 2 e o 3 falam da condição de fundador até 31 de Dezembro de 2026. Depois dessa data têm de ser revistos nos Emails-tipo (ou desactivados).
+
+**Migração 013** (`013_emails_interessados.sql`): `emails_enviados` ganha `person_id` (`people`, `on delete cascade`). A regra "exactamente um de `pedido_id` e `associado_id`" e o índice único dos envios são substituídos por versões que incluem `person_id`; todas as linhas actuais cumprem as novas. `people` não muda. As funções gravam `person_id` só nos envios a interessados, por isso o webhook e os pedidos não dependem da 013; a função diária e o admin, sim: a 013 corre antes de publicar a função e antes de estes ecrãs chegarem a `main`.
 
 ## 17. Apresentação do admin (acrescentado a 5 de Novembro de 2026)
 
@@ -540,7 +563,7 @@ Quatro cartões brancos sobre fundo cinzento claro (#EDEDED): número em Rajdhan
 |---|---|---|---|---|
 | RCP | Presenças (edição aberta) | Inscritos | Ausentes | Contagem de sala ("—" enquanto não for registada) |
 | Rede | Contactos | Por rever | Interessados | **Acções em atraso** (pede acção) |
-| Associados | Pedidos em aberto | Pagos por admitir | Associados (activos) | **Emails que não saíram** (pede acção) |
+| Associados | Pedidos em aberto | Pagos por admitir | Interessados sem pedido (desde 6 de Novembro de 2026; antes, Associados activos) | **Emails que não saíram** (pede acção) |
 | Biblioteca | Na mesa | Levados | Desaparecidos | Entradas nesta edição |
 
 - Os números contam as listas que cada módulo já lê (um `numeros.js` por módulo, com as funções do seu `api.js`). Duas leituras novas, só de leitura, em objectos que já existem: o nome em `perfis` e "Entradas nesta edição" na vista `biblioteca_resumo` (linha da edição aberta). No RCP, a barra lê a edição aberta e `edition_summary`, como o painel, e actualiza-se a cada 15 s enquanto o separador está aberto.
@@ -552,9 +575,9 @@ Quatro cartões brancos sobre fundo cinzento claro (#EDEDED): número em Rajdhan
 - Lista e ficha lado a lado: coluna da esquerda com 340 a 380 px, fundo branco, cantos de 10 px, com título, pesquisa, filtros em pílulas (Rajdhani 600 12 px, maiúsculas) e os itens (nome, linha secundária em cinzento #828487, pílula de estado à direita); o item aberto tem fundo #EDEDED e uma barra carmim de 4 px à esquerda.
 - Coluna da direita com a ficha em cartões brancos: sobretítulo em carmim (Rajdhani 600 12 px, espaçado), nome em Rajdhani 700 32 px, dados em grelha de três colunas, duas no telemóvel (rótulo 11 px cinzento em maiúsculas, valor 600), linha de acções com o botão principal carmim (#C01C36, texto branco) e os secundários com contorno turquesa escura (#1F7A82); as saídas (encerrar, apagar) em texto cinzento, alinhadas à direita. Cartões seguintes para histórico, emails, participações, quotas.
 - No telemóvel, empilham-se: a lista primeiro; ao abrir um item, a ficha ocupa o ecrã e "Voltar" regressa à lista.
-- Aplica-se ao Rede (contactos e ficha; as vistas Por rever, Em atraso e Interessados passam a pílulas da coluna da lista), aos Associados (pedidos e associados; Emails-tipo, Emails enviados e Configuração em largura total) e à Biblioteca (livros e ficha).
+- Aplica-se ao Rede (contactos e ficha; as vistas Por rever e Em atraso passam a pílulas da coluna da lista; Interessados passou aos Associados, §16.16), aos Associados (pedidos e associados; Emails-tipo, Emails enviados e Configuração em largura total) e à Biblioteca (livros e ficha).
 - Lado a lado a partir de 64rem (1024 px); abaixo disso empilha-se como no telemóvel. Sem item aberto, a coluna da ficha mostra "Escolhe um contacto na lista.".
-- Rede: na vista Contactos, a pesquisa e o estado em pílulas (Todos e os cinco estados); a etiqueta fica numa lista de escolha, por serem oito. As etiquetas passam para a linha secundária do item e para o sobretítulo da ficha. Abrir ou fechar um contacto mantém os parâmetros da lista (`v`, `q`, `e`, `st`), para a lista não mudar ao lado da ficha; a lista lê de novo ao abrir, gravar ou fechar um contacto. As acções da própria linha ficam: "Registar revisão" (Por rever), "Abrir cartão" e "Concluir" (Em atraso), "Criar contacto" (Interessados). "Apagar contacto" passa a saída da linha de acções da ficha, com a mesma confirmação.
+- Rede: na vista Contactos, a pesquisa e o estado em pílulas (Todos e os cinco estados); a etiqueta fica numa lista de escolha, por serem oito. As etiquetas passam para a linha secundária do item e para o sobretítulo da ficha. Abrir ou fechar um contacto mantém os parâmetros da lista (`v`, `q`, `e`, `st`), para a lista não mudar ao lado da ficha; a lista lê de novo ao abrir, gravar ou fechar um contacto. As acções da própria linha ficam: "Registar revisão" (Por rever), "Abrir cartão" e "Concluir" (Em atraso). "Apagar contacto" passa a saída da linha de acções da ficha, com a mesma confirmação.
 - Os formulários abertos na coluna da ficha (contacto, interacção, revisão) mantêm-se; só os botões tomam as cores da mesa.
 - Biblioteca: a lista dos livros deixa de ser tabela (número e título; autor, edição de entrada e quem trouxe na linha secundária; estado em pílula). Pesquisa como antes e estado em pílulas (Todos, Na mesa, Levado, Desaparecido). A ficha: sobretítulo com o número, o título em grande, "Editar" como botão principal e "Apagar livro" como saída, só quando o livro não tem movimentos (SPEC 15.2); o histórico num cartão a seguir. Levado fica com a pílula neutra.
 - Todos os botões do admin têm o mesmo tamanho: 44 px de altura, Montserrat 600 a 14 px. Três estilos: principal (carmim, texto branco), secundário (contorno turquesa escura) e discreto (contorno cinzento claro, texto azul-marinho). O botão de gravar dos formulários só ocupa a largura toda no telemóvel. As ligações em texto (saídas, "Voltar à lista", acções da linha) não são botões e ficam como estão.

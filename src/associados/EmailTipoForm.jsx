@@ -5,6 +5,7 @@ import {
   camposContacto,
   camposDoTexto,
   camposPedido,
+  camposPessoa,
   dataBruxelas,
   preencher,
 } from '../../supabase/functions/_shared/campos.js'
@@ -13,6 +14,7 @@ import {
   lerConfiguracao,
   listarAssociados,
   listarContactosSemPedido,
+  listarInteressados,
   listarPedidos,
   obterEmailTipo,
 } from './api.js'
@@ -24,6 +26,7 @@ import {
   MANUAIS,
   fonteDoEmail,
   nomeDoAssociado,
+  nomeDoInteressado,
   normalizar,
   numeroEmail,
   rotulo,
@@ -35,11 +38,24 @@ const vazioTexto = (v) => v === null || v === undefined || String(v).trim() === 
 const porNome = (a, b) => a.rotulo.localeCompare(b.rotulo, 'pt')
 
 // Registos para a lista de escolha: contactos por nome (rótulo: nome; detalhe: email),
+// interessados sem pedido por nome (sem nome, "Sem nome"; detalhe: email),
 // pedidos por nome (nome e estado), associados por número (número e nome).
 async function carregarFonte(fonte) {
   if (fonte === 'contacto') {
     return (await listarContactosSemPedido())
       .map((c) => ({ id: c.id, rotulo: c.nome, detalhe: c.email, procura: normalizar(`${c.nome} ${c.email ?? ''}`), dados: c }))
+      .sort(porNome)
+  }
+  if (fonte === 'interessado') {
+    return (await listarInteressados())
+      .filter((i) => !i.pedido)
+      .map((i) => ({
+        id: i.id,
+        rotulo: nomeDoInteressado(i),
+        detalhe: i.email,
+        procura: normalizar(`${i.name ?? ''} ${i.email}`),
+        dados: i,
+      }))
       .sort(porNome)
   }
   if (fonte === 'pedido') {
@@ -63,6 +79,7 @@ async function carregarFonte(fonte) {
 
 const VAZIO = {
   contacto: 'Não há contactos do Rede com a etiqueta associado e sem pedido de adesão.',
+  interessado: 'Não há interessados sem pedido de adesão.',
   pedido: 'Ainda não há pedidos de adesão.',
   associado: 'Ainda não há associados.',
 }
@@ -72,6 +89,7 @@ const VAZIO = {
 function camposDaFonte(fonte, registo, config, hoje) {
   if (!registo) return {}
   if (fonte === 'contacto') return camposContacto(registo, config, hoje)
+  if (fonte === 'interessado') return camposPessoa(registo, config, hoje)
   if (fonte === 'pedido') return camposPedido(registo, config, hoje)
   const quota = [...registo.quotas].sort((a, b) => b.ano - a.ano)[0] ?? null
   return camposAssociado(registo, config, hoje, quota)
