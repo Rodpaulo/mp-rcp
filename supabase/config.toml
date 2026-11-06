@@ -1,6 +1,6 @@
 # Configuração mínima para publicar as Edge Functions com a CLI da Supabase
 # (SPEC §16.13). Não contém chaves nem segredos.
-# As duas funções não verificam o JWT da Supabase: o Tally e o pg_net não têm
+# tally-webhook e associados-diario não verificam o JWT da Supabase: o Tally e o pg_net não têm
 # sessão. A protecção está na assinatura do Tally e no CRON_SECRET.
 
 project_id = "mp-rcp"
@@ -12,3 +12,15 @@ entrypoint = "./functions/tally-webhook/index.js"
 [functions.associados-diario]
 verify_jwt = false
 entrypoint = "./functions/associados-diario/index.js"
+
+# Recibos (SPEC 16.17): corre com a sessão de quem carrega no admin; a Supabase verifica o JWT.
+[functions.emitir-recibo]
+verify_jwt = true
+entrypoint = "./functions/emitir-recibo/index.js"
+# As fontes do PDF vão com a função (SPEC 16.17); nada se lê da rede.
+static_files = ["./functions/emitir-recibo/fonts/*.ttf"]
+
+# "Enviar teste para mim" na pré-visualização dos emails-tipo (SPEC 16.18): sessão de quem carrega.
+[functions.enviar-teste]
+verify_jwt = true
+entrypoint = "./functions/enviar-teste/index.js"

@@ -18,27 +18,38 @@ function somarDias(iso, n) {
 }
 
 // Uma linha do funil para o email 2 (o envio que conta, a configuração e o dia do interesse).
-function linhaEmail2(i, contaPronta, hoje) {
+function linhaEmail2(i, parada, hoje) {
   const e = i.email2
   if (e?.estado === 'enviado') return `enviado a ${dia(e.enviado_em)}`
   if (e?.estado === 'a_enviar') return `a enviar desde ${dia(e.enviado_em)}`
   if (i.pedido) return 'não sai: já há pedido'
-  const motivo = !contaPronta
-    ? 'falta o IBAN e o titular da conta na configuração'
+  if (!e && parada === 'campanha') return 'convite por enviar (campanha desligada)'
+  const motivo = parada
+    ? parada === 'campanha'
+      ? 'campanha desligada'
+      : 'falta o IBAN na configuração'
     : dataBruxelas(i.associado_interesse_at) >= hoje
       ? 'sai a partir de amanhã, às 9h'
       : 'sai na passagem seguinte da função diária, às 9h'
   return e?.estado === 'falhou' ? `falhou a ${dia(e.enviado_em)}; ${motivo}` : `por enviar (${motivo})`
 }
 
-function linhaEmail3(i) {
+function linhaEmail3(i, parada) {
   const e = i.email3
   if (e?.estado === 'enviado') return `enviado a ${dia(e.enviado_em)}`
   if (e?.estado === 'a_enviar') return `a enviar desde ${dia(e.enviado_em)}`
   if (i.pedido) return 'não sai: já há pedido'
   if (i.email2?.estado !== 'enviado') return 'depois do email 2'
+  if (parada === 'campanha') return 'convite por enviar (campanha desligada)'
+  if (parada) return 'por enviar (falta o IBAN na configuração)'
   const previsto = somarDias(dataBruxelas(i.email2.enviado_em), DIAS_ATE_EMAIL_3)
   return e?.estado === 'falhou' ? `falhou a ${dia(e.enviado_em)}; volta a tentar às 9h` : `previsto para ${formatDate(previsto)}`
+}
+
+// Como a função diária: 'campanha' se campanha_convites não for "sim", 'iban' sem IBAN, null se podem sair.
+function campanhaParada(config) {
+  if (String(config.campanha_convites ?? '').trim().toLowerCase() !== 'sim') return 'campanha'
+  return config.iban ? null : 'iban'
 }
 
 // Ficha de um interessado (SPEC 16.16): o funil e os emails. people só se lê.
@@ -50,7 +61,7 @@ export default function InteressadoFicha({ id, onLista, onAbrirPedido }) {
     return Promise.all([listarInteressados(), listarEnviosDaPessoa(id), lerConfiguracao()]).then(
       ([pessoas, envios, config]) => {
         const pessoa = pessoas.find((p) => p.id === id)
-        setDados(pessoa ? { pessoa, envios, contaPronta: Boolean(config.iban && config.titular_conta) } : null)
+        setDados(pessoa ? { pessoa, envios, parada: campanhaParada(config) } : null)
       },
       (error) => {
         console.error('carregar interessado falhou:', error)
@@ -81,7 +92,7 @@ export default function InteressadoFicha({ id, onLista, onAbrirPedido }) {
   }
   if (dados === undefined) return <p>A carregar…</p>
 
-  const { pessoa: i, envios, contaPronta } = dados
+  const { pessoa: i, envios, parada } = dados
   const hoje = dataBruxelas()
   const etapa = etapaInteressado(i)
   const diasDesde = diasEntre(dataBruxelas(i.associado_interesse_at), hoje)
@@ -110,8 +121,8 @@ export default function InteressadoFicha({ id, onLista, onAbrirPedido }) {
             Interesse registado a {dia(i.associado_interesse_at)}
             {diasDesde > 0 && ` (há ${diasDesde} ${diasDesde === 1 ? 'dia' : 'dias'})`}
           </li>
-          <li>Email 2: {linhaEmail2(i, contaPronta, hoje)}</li>
-          <li>Email 3: {linhaEmail3(i)}</li>
+          <li>Email 2: {linhaEmail2(i, parada, hoje)}</li>
+          <li>Email 3: {linhaEmail3(i, parada)}</li>
           <li>
             {i.pedido ? (
               <>

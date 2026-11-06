@@ -50,7 +50,8 @@ export function textoParaHtml(texto) {
 
 const PAUSA_MS = 600 // o plano gratuito aceita 2 pedidos por segundo
 
-export async function enviarResend({ para, assunto, texto }) {
+// anexos: [{ filename, content }], com content em base64 (o recibo em PDF, SPEC 16.17).
+export async function enviarResend({ para, assunto, texto, anexos = [] }) {
   const chave = Deno.env.get('RESEND_API_KEY')
   if (!chave) return { ok: false, resposta: 'RESEND_API_KEY não está definida.' }
   try {
@@ -64,6 +65,7 @@ export async function enviarResend({ para, assunto, texto }) {
         subject: assunto,
         text: texto,
         html: textoParaHtml(texto),
+        ...(anexos.length ? { attachments: anexos } : {}),
       }),
     })
     const corpo = await r.text()
@@ -79,23 +81,19 @@ export async function enviarResend({ para, assunto, texto }) {
 
 // Envia um email-tipo a um pedido, a um associado ou a uma pessoa (interessado, SPEC 16.16),
 // uma só vez por período.
+// Com reciboId (emails 11 e 18 com o PDF em anexo, SPEC 16.17), o passo 1 não se faz: um recibo
+// pode ser reenviado; a base só impede duas reservas a_enviar do mesmo recibo ao mesmo tempo.
 // 1. Se já houver um envio que não falhou → 'ja_enviado'.
 // 2. Campos em falta → regista 'falhou' com a lista, não envia.
 // 3. Reserva a linha ('a_enviar'); se outro processo a reservou → 'ja_enviado'.
 // 4. Chama o Resend e grava 'enviado' ou 'falhou'.
 // Devolve { resultado: 'enviado' | 'falhou' | 'ja_enviado' | 'inactivo', motivo? }.
-export async function enviarEmail(sb, { tipo, pedidoId = null, associadoId = null, personId = null, periodo = '', para, campos, hoje }) {
+export async function enviarEmail(sb, {
+  tipo, pedidoId = null, associadoId = null, personId = null, reciboId = null, periodo = '', para, campos, hoje, anexos = [],
+}) {
   if (!tipo) return { resultado: 'falhou', motivo: 'Email-tipo inexistente.' }
   if (!tipo.activo) return { resultado: 'inactivo' }
-
-  let q = sb.from('emails_enviados').select('id').eq('email_tipo', tipo.chave).eq('periodo', periodo).neq('estado', 'falhou')
-  // A base garante um só destino por linha (pedido, associado ou pessoa).
-  if (pedidoId) q = q.eq('pedido_id', pedidoId)
-  else if (associadoId) q = q.eq('associado_id', associadoId)
-  else q = q.eq('person_id', personId)
-  const { data: existentes, error: erroLer } = await q.limit(1)
-  if (erroLer) throw new Error(`emails_enviados: ${erroLer.message}`)
-  if (existentes.length) return { resultado: 'ja_enviado' }
+  if (!reciboId && await jaEnviado(sb, { tipo, pedidoId, associadoId, personId, periodo })) return { resultado: 'ja_enviado' }
 
   const assunto = preencher(tipo.assunto, campos, hoje)
   const corpo = preencher(tipo.corpo, campos, hoje)
@@ -104,8 +102,10 @@ export async function enviarEmail(sb, { tipo, pedidoId = null, associadoId = nul
     email_tipo: tipo.chave,
     pedido_id: pedidoId,
     associado_id: associadoId,
-    // person_id só quando há pessoa: as gravações de pedidos e associados não dependem da migração 013.
+    // person_id e recibo_id só quando existem: as gravações de pedidos e associados não dependem
+    // das migrações 013 e 014.
     ...(personId ? { person_id: personId } : {}),
+    ...(reciboId ? { recibo_id: reciboId } : {}),
     periodo,
     destinatario: vazio(para) ? '(sem email)' : para,
     assunto: assunto.texto,
@@ -125,7 +125,7 @@ export async function enviarEmail(sb, { tipo, pedidoId = null, associadoId = nul
     throw new Error(`emails_enviados: ${erroReserva.message}`)
   }
 
-  const r = await enviarResend({ para, assunto: assunto.texto, texto: corpo.texto })
+  const r = await enviarResend({ para, assunto: assunto.texto, texto: corpo.texto, anexos })
   const { error: erroGravar } = await sb.from('emails_enviados').update({
     estado: r.ok ? 'enviado' : 'falhou',
     resposta_provider: r.resposta,
@@ -134,6 +134,17 @@ export async function enviarEmail(sb, { tipo, pedidoId = null, associadoId = nul
   if (erroGravar) console.error(`emails_enviados ${reserva.id}: ${erroGravar.message}`)
 
   return r.ok ? { resultado: 'enviado' } : { resultado: 'falhou', motivo: r.resposta }
+}
+
+async function jaEnviado(sb, { tipo, pedidoId, associadoId, personId, periodo }) {
+  let q = sb.from('emails_enviados').select('id').eq('email_tipo', tipo.chave).eq('periodo', periodo).neq('estado', 'falhou')
+  // A base garante um só destino por linha (pedido, associado ou pessoa).
+  if (pedidoId) q = q.eq('pedido_id', pedidoId)
+  else if (associadoId) q = q.eq('associado_id', associadoId)
+  else q = q.eq('person_id', personId)
+  const { data: existentes, error: erroLer } = await q.limit(1)
+  if (erroLer) throw new Error(`emails_enviados: ${erroLer.message}`)
+  return existentes.length > 0
 }
 
 // ---------- Respostas HTTP e segredos -------------------------------

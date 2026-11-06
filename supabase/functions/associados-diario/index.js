@@ -9,11 +9,13 @@
 //   2. Pedidos em aberto: email 4, 3-A ou o lembrete do intervalo (um por pedido).
 //   3. Interessados sem pedido: email 2 ou 3 (um por pessoa).
 //   4. Associados activos: 9/10, 16, 17, 12, 13.
+//   5. Recibos emitidos cujo email (11 ou 18) ainda não saiu: nova tentativa com o mesmo PDF.
 
 import {
   FIM_FUNDADORES, anoBissexto, camposAssociado, camposPedido, camposPessoa, clienteServico, dataBruxelas,
   diasEntre, enviarEmail, euros, horaBruxelas, iguais, json, lerConfiguracao, lerEmailsTipo, numero,
 } from '../_shared/emails.js'
+import { descarregarPdf, enviarRecibo, lerAssociado } from '../_shared/recibos.js'
 
 // [de, até (exclusive), chave]: só sai o lembrete do intervalo em que o pedido está.
 const LEMBRETES = [
@@ -134,8 +136,9 @@ Deno.serve(async (req) => {
 
     // ---------- 3. Interessados sem pedido (SPEC 16.16) ----------------
     // people com associado_interesse e sem nenhum pedido com o mesmo email.
-    // Email 2 uma vez, a partir do dia seguinte ao interesse, só com IBAN e titular na
-    // configuração (sem eles, fica por enviar, sem erro). Email 3 uma vez, 14 dias depois do 2.
+    // Os emails 2 e 3 só saem com campanha_convites = "sim" e o IBAN preenchido na configuração;
+    // de outro modo ficam por enviar, sem erro. Email 2 uma vez, a partir do dia seguinte ao
+    // interesse; email 3 uma vez, 14 dias depois do 2.
     {
       const [{ data: pessoas, error }, { data: pedidos, error: erroP }] = await Promise.all([
         sb.from('people').select('id, email, name, associado_interesse_at').eq('associado_interesse', true),
@@ -144,7 +147,7 @@ Deno.serve(async (req) => {
       if (error) throw new Error(`people: ${error.message}`)
       if (erroP) throw new Error(`pedidos_adesao: ${erroP.message}`)
       const comPedido = new Set(pedidos.map((p) => String(p.email).toLowerCase()))
-      const contaPronta = Boolean(config.iban && config.titular_conta)
+      const motivoParado = campanhaParada(config)
       let porEnviar = 0
 
       for (const pessoa of pessoas) {
@@ -153,7 +156,7 @@ Deno.serve(async (req) => {
 
         if (!jaFeito('02_convite_contactos', base)) {
           if (!pessoa.associado_interesse_at || dataBruxelas(pessoa.associado_interesse_at) >= hoje) continue
-          if (!contaPronta) {
+          if (motivoParado) {
             porEnviar++
             continue
           }
@@ -162,12 +165,13 @@ Deno.serve(async (req) => {
         }
 
         const dia2 = email2Em.get(pessoa.id)
+        if (motivoParado) continue
         if (dia2 && diasEntre(dia2, hoje) >= DIAS_ATE_EMAIL_3 && !jaFeito('03_ultimos_dias_sem_pedido', base)) {
           await enviar('03_ultimos_dias_sem_pedido', base)
         }
       }
       if (porEnviar) {
-        relatorio.avisos.push(`Sem iban e titular_conta na configuração: ${porEnviar} interessado(s) com o email 2 por enviar.`)
+        relatorio.avisos.push(`${motivoParado}: ${porEnviar} interessado(s) com o email 2 por enviar.`)
       }
     }
 
@@ -232,12 +236,49 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ---------- 5. Recibos por enviar (SPEC 16.17) ---------------------
+    // Recibos emitidos, com PDF, sem nenhum envio enviado nem em curso. Um recibo sem PDF
+    // conclui-se no admin ("Emitir recibo"), não aqui.
+    {
+      const [{ data: recibos, error }, { data: envios, error: erroE }] = await Promise.all([
+        sb.from('recibos').select('*').eq('estado', 'emitido'),
+        sb.from('emails_enviados').select('recibo_id, estado').not('recibo_id', 'is', null).neq('estado', 'falhou'),
+      ])
+      if (error) throw new Error(`recibos: ${error.message}`)
+      if (erroE) throw new Error(`emails_enviados: ${erroE.message}`)
+      const tratados = new Set(envios.map((e) => e.recibo_id))
+
+      for (const recibo of recibos) {
+        if (tratados.has(recibo.id)) continue
+        if (!recibo.ficheiro) {
+          relatorio.avisos.push(`O recibo n.º ${recibo.numero} está emitido sem PDF: conclui-o no admin.`)
+          continue
+        }
+        try {
+          const [associado, pdf] = await Promise.all([lerAssociado(sb, recibo.associado_id), descarregarPdf(sb, recibo.ficheiro)])
+          const r = await enviarRecibo(sb, { recibo, associado, pdf, config, tipos, hoje })
+          const linha = { email: r.email, quem: `recibo n.º ${recibo.numero}` }
+          if (r.resultado === 'enviado') relatorio.enviados.push(linha)
+          else if (r.resultado === 'falhou') relatorio.falhados.push({ ...linha, motivo: r.motivo })
+        } catch (e) {
+          relatorio.falhados.push({ email: 'recibo', quem: `recibo n.º ${recibo.numero}`, motivo: e?.message ?? String(e) })
+        }
+      }
+    }
+
     return json(200, relatorio)
   } catch (e) {
     console.error(e)
     return json(500, { ...relatorio, erro: e?.message ?? String(e) })
   }
 })
+
+// Porque é que os emails 2 e 3 não saem (null = podem sair). SPEC 16.16.
+function campanhaParada(config) {
+  if (String(config.campanha_convites ?? '').trim().toLowerCase() !== 'sim') return 'Campanha de convites desligada'
+  if (!config.iban) return 'Falta o IBAN na configuração'
+  return null
+}
 
 async function marcarInstrucoes(sb, pedido) {
   if (pedido.estado !== 'recebido') return

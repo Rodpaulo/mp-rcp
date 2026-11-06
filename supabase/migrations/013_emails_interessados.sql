@@ -12,6 +12,7 @@
 --     "exactamente um de pedido_id, associado_id e person_id";
 --   - o índice único dos envios passa a incluir person_id (sem isso, dois
 --     interessados diferentes contariam como o mesmo destinatário).
+-- Acrescenta ainda a chave campanha_convites ('nao') a configuracao.
 -- people não é alterada. Tudo dentro de uma transacção.
 -- =====================================================================
 
@@ -48,5 +49,10 @@ create unique index emails_enviados_unico
   where estado <> 'falhou';
 
 create index emails_enviados_person_idx on public.emails_enviados (person_id);
+
+-- Interruptor da campanha dos emails 2 e 3 (SPEC 16.16): só saem com 'sim' e o IBAN preenchido.
+insert into public.configuracao (chave, valor, descricao) values
+  ('campanha_convites', 'nao', 'Emails 2 e 3 aos interessados: "sim" envia, "nao" não envia')
+on conflict (chave) do nothing;
 
 commit;

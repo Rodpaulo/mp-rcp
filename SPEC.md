@@ -347,8 +347,8 @@ Verificação do esquema (passo 0): um livro acrescentado pela direcção cabe n
 A secção 12 fecha a v2 numa lista curta, e o §14.8 deixava os associados para "quando a ASBL existir". A 5 de Novembro o Miguel decidiu acrescentar o módulo Associados, terceiro separador do admin (RCP · Rede · Associados), como fez com o Rede e a Biblioteca, com estas condições: o SPEC primeiro, depois a migração, depois as funções, depois os ecrãs; migração aditiva; `people`, `contactos` e o resto do Rede não mudam de esquema. Primeira fase: SPEC, migração 008 e as duas funções de servidor. Os ecrãs ficam para a fase seguinte.
 
 Este módulo afasta-se de três regras anteriores, e só nisto:
-- **§4** ("não há servidor intermédio nem funções serverless"): passa a haver duas Edge Functions da Supabase, no mesmo projecto, na UE. A página pública e o admin continuam a falar directamente com o Supabase.
-- **§6** ("a secret key nunca é usada"): as duas funções usam a chave de serviço que a Supabase injecta no ambiente das Edge Functions (`SUPABASE_SERVICE_ROLE_KEY`). Ninguém a copia nem a escreve: não sai da Supabase. A aplicação no browser continua só com a publishable key.
+- **§4** ("não há servidor intermédio nem funções serverless"): passa a haver duas Edge Functions da Supabase, no mesmo projecto, na UE (e uma terceira, `emitir-recibo`, desde 6 de Novembro de 2026, §16.17). A página pública e o admin continuam a falar directamente com o Supabase.
+- **§6** ("a secret key nunca é usada"): as duas funções (`tally-webhook` e `associados-diario`; a `emitir-recibo` não) usam a chave de serviço que a Supabase injecta no ambiente das Edge Functions (`SUPABASE_SERVICE_ROLE_KEY`). Ninguém a copia nem a escreve: não sai da Supabase. A aplicação no browser continua só com a publishable key.
 - **§14.4** ("envio de email a partir da aplicação; gestão de quotas e pagamentos" fora do Rede): passam a existir, mas neste módulo, não no Rede.
 
 ### 16.2 Finalidade
@@ -395,7 +395,7 @@ recebido → instrucoes_enviadas → pago → admitido
 - Quem é admitido até 31 de Dezembro de 2027 fica com a quota de 2027 paga (o primeiro exercício vai até essa data). A partir de 2028, quem é admitido fica com a quota do ano da admissão paga.
 - A 1 de Janeiro de cada ano, a partir de 2028, a função diária cria para cada associado `activo` a linha da quota do ano, `nao_paga`, com o valor da configuração, e envia o email 16. Se a função não correr no dia 1, faz isto na primeira passagem de Janeiro; depois de Janeiro, não.
 - Enquanto a quota do ano estiver `nao_paga`: um email 17 por trimestre, no 2.º, 3.º e 4.º trimestres (o 1.º é o do email 16), na primeira passagem do trimestre. Quotas de anos anteriores não geram lembretes.
-- Registar o pagamento e o recibo (`data_pagamento`, `recibo_numero`, `recibo_data`) é manual.
+- Registar o pagamento é manual. O recibo emite-se no admin (§16.17), que preenche `recibo_numero` e `recibo_data`; registá-los à mão fica só para recibos emitidos fora da app.
 
 ### 16.8 Emails-tipo
 Os textos são os do documento "Emails-tipo para associados" (5 de Novembro de 2026), carregados tal como estão na tabela `emails_tipo` e editáveis no admin. São 19: os 18 numerados e o 3-A (novo nessa versão).
@@ -403,20 +403,20 @@ Os textos são os do documento "Emails-tipo para associados" (5 de Novembro de 2
 | Chave | Envio | Quando sai (pela função diária, salvo o 4) |
 |---|---|---|
 | `01_convite_pendentes` | manual | — |
-| `02_convite_contactos` | automático | uma vez, a cada interessado sem pedido, a partir do dia seguinte ao registo do interesse, só com `iban` e `titular_conta` preenchidos (§16.16) |
-| `03_ultimos_dias_sem_pedido` | automático | uma vez, 14 dias depois do 2, a quem continuar sem pedido (§16.16) |
+| `02_convite_contactos` | automático | uma vez, a cada interessado sem pedido, a partir do dia seguinte ao registo do interesse, só com `campanha_convites` = "sim" e `iban` preenchido (§16.16) |
+| `03_ultimos_dias_sem_pedido` | automático | uma vez, 14 dias depois do 2, a quem continuar sem pedido, com as mesmas duas condições (§16.16) |
 | `03a_ultimos_dias_sem_pagamento` | automático | uma vez, entre `data_ultimos_dias_fundador` (15 de Dezembro de 2026) e 31 de Dezembro de 2026, a cada pedido `recebido` ou `instrucoes_enviadas` |
 | `04_pedido_recebido` | automático | logo, pelo webhook; se falhar, na passagem seguinte |
 | `05`…`08` lembretes | automático | aos 10, 30, 60 e 90 dias após a data do pedido, só com o estado `recebido` ou `instrucoes_enviadas` |
 | `09_admissao_fundador` / `10_admissao` | automático | na primeira passagem depois da admissão, consoante `fundador` |
-| `11_recibo_adesao` | manual | — |
+| `11_recibo_adesao` | ao emitir o recibo | pela função `emitir-recibo`, com o PDF em anexo, quando é a primeira quota do associado (§16.17) |
 | `12_aniversario` | automático | no dia, a associados `activo` com aniversário preenchido; o 29/02 sai a 28/02 nos anos comuns |
 | `13_boas_ferias` | automático | uma vez por ano, na primeira passagem entre 1 e 15 de Agosto, a associados `activo` |
 | `14_inscricoes_antecipadas` | manual, por agora | o documento deixa-o por decidir |
 | `15_propostas_programacao` | manual | — |
 | `16_renovacao_quota` | automático | §16.7 |
 | `17_lembrete_quota` | automático | §16.7 |
-| `18_quota_paga_recibo` | manual | — |
+| `18_quota_paga_recibo` | ao emitir o recibo | pela função `emitir-recibo`, com o PDF em anexo, nas renovações (§16.17) |
 
 Regras de envio:
 - Todos os emails começam por "Olá {primeiro_nome}". Os campos `{entre_chavetas}` vêm do pedido (`primeiro_nome`, `nome_completo`, `email`, `aniversario`, `data_pedido`), da quota ou da admissão (`ano`, `valor_quota`) e da configuração (`link_pedido_adesao`, `IBAN`, `titular_conta`, `valor_quota`, `assinatura`, `proxima_sessao`, `mes_regresso`, `consequencia_90_dias`). O `{valor_quota}` dos emails do pedido é o do ano corrente; o dos emails 16 e 17 é o da linha da quota. Os valores escrevem-se "40 €"; as datas por extenso ("5 de Novembro de 2026"). Para os associados, nome e email vêm do pedido e, sem pedido, do contacto.
@@ -425,7 +425,7 @@ Regras de envio:
 - Nunca o mesmo email-tipo duas vezes ao mesmo pedido ou associado no mesmo período (§16.9). Um envio que falhou não conta: tenta-se de novo.
 - Pedidos: em cada passagem sai, no máximo, um email por pedido. O 4 vem primeiro; sem o 4 enviado, não há lembretes. Sai só o lembrete do intervalo em que o pedido está (10–29, 30–59, 60–89, 90–119 dias); um intervalo que passe sem envio não se recupera. No período do 3-A, o 3-A passa à frente do lembrete do dia.
 - Um email-tipo com `activo` falso nunca sai.
-- Os emails manuais (1, 11, 14, 15, 18): na fase dos ecrãs, o admin mostra o texto já preenchido para copiar; o envio é feito fora da aplicação.
+- Os emails manuais (1, 14, 15): o admin mostra o texto já preenchido para copiar; o envio é feito fora da aplicação. O 11 e o 18 saem com o recibo (§16.17).
 - Limites do Resend no plano gratuito (100 emails por dia, 2 por segundo): a função espera entre envios; o que passar do limite fica `falhou` e sai no dia seguinte (o 12 perde-se se falhar no dia).
 
 ### 16.9 Modelo de dados (migração 008)
@@ -456,14 +456,14 @@ Regras:
 - Listas fechadas por `check`, como no Rede.
 
 ### 16.10 Configuração (tabela `configuracao`, editável no admin)
-`iban`, `titular_conta`, `assinatura` ("A equipa das Matinés Pensantes"), `link_pedido_adesao` (`https://tally.so/r/BEaMqN`), `proxima_sessao`, `valor_quota_2026` (40), `valor_quota_2027` (40), e ainda `mes_regresso` (email 13), `consequencia_90_dias` (email 8) e `data_ultimos_dias_fundador` (email 3-A, 2026-12-15). Os valores sem omissão ficam vazios até alguém os preencher; um valor vazio impede os emails que o usam (§16.8).
+`iban`, `titular_conta`, `assinatura` ("A equipa das Matinés Pensantes"), `link_pedido_adesao` (`https://tally.so/r/BEaMqN`), `proxima_sessao`, `valor_quota_2026` (40), `valor_quota_2027` (40), e ainda `mes_regresso` (email 13), `consequencia_90_dias` (email 8) e `data_ultimos_dias_fundador` (email 3-A, 2026-12-15); para o recibo, `sede_morada` e `tesoureiro_nome` (migração 014, §16.17); e `campanha_convites` ("sim" | "nao", inicial "nao"; migração 013, §16.16). Os valores sem omissão ficam vazios até alguém os preencher; um valor vazio impede os emails que o usam (§16.8).
 
 ### 16.11 Segurança e acesso
 - As tabelas novas têm RLS com acesso total para `authenticated`, como no Rede; nada para `anon`.
 - As duas funções escrevem com a chave de serviço injectada pela Supabase (§16.1). Os segredos ficam nos segredos das Edge Functions, nunca no código: `RESEND_API_KEY`, `TALLY_SIGNING_SECRET`, `CRON_SECRET`.
 - `tally-webhook` só aceita pedidos com a assinatura do Tally válida (cabeçalho `Tally-Signature`, HMAC-SHA256 do corpo com o segredo de assinatura, em base64). Responde 200 a tudo o que aceitou, incluindo repetições; 401 sem assinatura válida; 500 se não conseguiu gravar o pedido (o Tally volta a tentar).
 - `associados-diario` só corre com o cabeçalho `x-cron-secret` igual a `CRON_SECRET`. O `pg_cron` lê o segredo e o endereço do projecto do Vault da Supabase; nada disso fica em ficheiros versionados.
-- As duas funções correm sem verificação de JWT da Supabase (o Tally e o `pg_net` não têm sessão); a protecção está na assinatura e no segredo.
+- As duas funções correm sem verificação de JWT da Supabase (o Tally e o `pg_net` não têm sessão); a protecção está na assinatura e no segredo. A `emitir-recibo` é o contrário: verifica o JWT e corre com a sessão de quem carrega (§16.17).
 - A direcção tem quatro contas no Supabase Auth, criadas à mão: Ana, Miguel, Patrícia e Vera, todas administradoras e cada uma com a sua linha em `perfis`. As linhas da Vera e da Patrícia entraram à mão, por `insert` no SQL Editor; a migração 010 não foi corrida e está marcada "não aplicar" (§16.13).
 
 ### 16.12 Pontos em aberto
@@ -476,7 +476,7 @@ Regras:
 
 ### 16.13 Regras de construção
 - **Migração 008 aditiva**: só cria tabelas, índices, políticas e dados iniciais das tabelas novas. As chaves estrangeiras para `contactos` e `perfis` são novas e vivem nas tabelas novas; nenhuma coluna, restrição, política, vista ou função existente muda. O `pg_cron` fica numa migração à parte (009), a correr depois de as funções estarem publicadas; a 010 (linha da Vera em `perfis`) **não se aplica**: não foi corrida, porque os perfis da Vera e da Patrícia entraram à mão; o ficheiro fica no repositório, marcado no cabeçalho, só como registo.
-- Funções em `supabase/functions/` (JavaScript para Deno): `tally-webhook/index.js`, `associados-diario/index.js` e o módulo comum `_shared/emails.js` (preencher campos, datas, chamar o Resend, registar). Sem SDK do Resend: a chamada é um `fetch`. A única biblioteca é a `@supabase/supabase-js`, a mesma da aplicação. `supabase/config.toml` só diz às funções onde está o ficheiro de entrada e que não verificam JWT.
+- Funções em `supabase/functions/` (JavaScript para Deno): `tally-webhook/index.js`, `associados-diario/index.js`, `emitir-recibo/index.js` e `pdf.js` (§16.17), `enviar-teste/index.js` (§16.18), e os módulos comuns `_shared/emails.js` e `_shared/recibos.js` (preencher campos, datas, chamar o Resend, registar). Sem SDK do Resend: a chamada é um `fetch`. A única biblioteca das funções é a `@supabase/supabase-js`, a mesma da aplicação; a `emitir-recibo` usa ainda `pdf-lib` e `@pdf-lib/fontkit` (§16.17). `supabase/config.toml` só diz às funções onde está o ficheiro de entrada e se verificam o JWT.
 - A função diária só trabalha quando são 9 horas em Bruxelas (o `pg_cron` chama-a às 07:00 e às 08:00 UTC; uma das duas cai sempre nas 9 horas, de Verão ou de Inverno); `{"forcar": true}` no corpo faz correr a qualquer hora, para testes. Devolve um resumo do que enviou, do que falhou e porquê.
 - Ecrãs: separador Associados em `/admin` (`?s=associados`), com `React.lazy`, como o Rede (§16.15).
 
@@ -512,7 +512,7 @@ Regras:
 
 **Associados**
 - Lista: número, nome, tipo, fundador, estado e a quota do ano. "Ano da quota" é 2027 até ao fim de 2027 (o primeiro exercício) e o ano corrente a partir de 2028.
-- Ficha: dados, contacto e pedido ligados, quotas e emails enviados. **Registar recibo** numa quota paga: número e data (hoje por omissão). Marcar como pagas as quotas abertas a partir de 2028 fica para quando houver quotas por pagar.
+- Ficha: dados, contacto e pedido ligados, quotas e emails enviados. **Registar recibo** numa quota paga: número e data (hoje por omissão); passa a "Recibo emitido fora da app" (§16.17). Marcar como pagas as quotas abertas a partir de 2028 fica para quando houver quotas por pagar.
 
 **Emails-tipo**
 - Lista dos 19, com o envio (automático ou manual) e o "quando".
@@ -533,18 +533,65 @@ Os interessados são as pessoas de `people` com `associado_interesse` verdadeiro
 - A vista "Interessados" sai do Rede e entra nos Associados, como primeira vista da linha de separadores (Interessados · Pedidos · Associados · Emails-tipo · Emails enviados · Configuração). A vista por omissão continua a ser Pedidos. Mesa de trabalho como os pedidos: lista à esquerda, ficha à direita.
 - "Criar contacto" desaparece: o contacto do Rede nasce na admissão (`admitir_pedido`), como já acontece.
 - Lista: nome (ou "Sem nome"), email e data do interesse; pílula com a etapa (Email 2 por enviar, Email 2 enviado, Email 2 falhou, Email 3 enviado, Com pedido). Filtros: **Activos** (sem pedido, por omissão), **Com pedido**, **Todos**, cada um com a contagem. Tem pedido quem tem um pedido de adesão (em qualquer estado) com o mesmo email.
-- Ficha: nome, ou "sem nome" assinalado no sobretítulo e nos dados; email; o funil: interesse registado a [data]; email 2 enviado a [data], ou "por enviar" com o motivo (falta o IBAN e o titular da conta; sai a partir de amanhã; sai na passagem seguinte); email 3 enviado a [data], ou a data prevista; pedido recebido a [data], com ligação para a ficha do pedido, quando existir. Por baixo, os emails enviados à pessoa.
+- Ficha: nome, ou "sem nome" assinalado no sobretítulo e nos dados; email; o funil: interesse registado a [data]; email 2 enviado a [data], ou "convite por enviar (campanha desligada)" com `campanha_convites` = "nao", ou "por enviar" com o motivo (falta o IBAN; sai a partir de amanhã; sai na passagem seguinte); email 3 enviado a [data], ou a data prevista; pedido recebido a [data], com ligação para a ficha do pedido, quando existir. Por baixo, os emails enviados à pessoa.
 - Barra de números dos Associados: o terceiro cartão passa a "Interessados sem pedido". O Rede mantém o seu cartão "Interessados" (todas as pessoas com interesse), só como número.
 
 **Regras da função diária** (`associados-diario`, depois dos pedidos e antes dos associados; no máximo um email por pessoa em cada passagem)
-- **Email 2**: a cada interessado sem pedido, uma vez, a partir do dia seguinte ao registo do interesse (dia de Bruxelas), e só se `iban` e `titular_conta` estiverem preenchidos na configuração. Sem eles, fica "por enviar", sem registo de falha; o resumo da função conta-os num aviso. Os interessados que já existiam recebem o 2 na primeira passagem depois de a configuração estar completa.
-- **Email 3**: uma vez, 14 dias (de calendário) depois do dia em que o 2 saiu, a quem continuar sem pedido.
+- **Interruptor da campanha** (decidido a 6 de Novembro de 2026): os emails 2 e 3 só saem com a chave `campanha_convites` = "sim" **e** o `iban` preenchido. A chave nasce com "nao" (migração 013). Assim pode testar-se o circuito inteiro com um IBAN provisório sem convidar ninguém a sério. Com "nao", nada sai, sem registo de falha; o resumo da função conta os que ficam por enviar.
+- **Email 2**: a cada interessado sem pedido, uma vez, a partir do dia seguinte ao registo do interesse (dia de Bruxelas). Os interessados que já existiam recebem o 2 na primeira passagem depois de a campanha ser ligada.
+- **Email 3**: uma vez, 14 dias (de calendário) depois do dia em que o 2 saiu, a quem continuar sem pedido, com a campanha ligada e o IBAN preenchido.
 - O 3-A mantém-se como está (pedidos sem pagamento).
 - **Nome**: `people.name` é facultativo (vem do MailPoet; quem entra só com o email não o tem). `{primeiro_nome}` é a primeira palavra do nome e, sem nome, a parte do email antes do @. `{nome_completo}` é o nome, se houver.
 - Os envios ficam em `emails_enviados` com `person_id` (migração 013), com as mesmas regras de reserva, unicidade e nova tentativa dos outros (§16.9). Com pedido, a pessoa sai do funil: os emails 2 e 3 deixam de sair.
 - Atenção aos textos: o 2 e o 3 falam da condição de fundador até 31 de Dezembro de 2026. Depois dessa data têm de ser revistos nos Emails-tipo (ou desactivados).
 
-**Migração 013** (`013_emails_interessados.sql`): `emails_enviados` ganha `person_id` (`people`, `on delete cascade`). A regra "exactamente um de `pedido_id` e `associado_id`" e o índice único dos envios são substituídos por versões que incluem `person_id`; todas as linhas actuais cumprem as novas. `people` não muda. As funções gravam `person_id` só nos envios a interessados, por isso o webhook e os pedidos não dependem da 013; a função diária e o admin, sim: a 013 corre antes de publicar a função e antes de estes ecrãs chegarem a `main`.
+**Migração 013** (`013_emails_interessados.sql`): `emails_enviados` ganha `person_id` (`people`, `on delete cascade`); `configuracao` ganha `campanha_convites` ("nao"). A regra "exactamente um de `pedido_id` e `associado_id`" e o índice único dos envios são substituídos por versões que incluem `person_id`; todas as linhas actuais cumprem as novas. `people` não muda. As funções gravam `person_id` só nos envios a interessados, por isso o webhook e os pedidos não dependem da 013; a função diária e o admin, sim: a 013 corre antes de publicar a função e antes de estes ecrãs chegarem a `main`.
+
+### 16.17 Recibos das quotas (6 de Novembro de 2026)
+Os recibos passam a ser emitidos e enviados pela aplicação. O registo à mão (`recibo_numero`, `recibo_data`) fica só para recibos emitidos fora dela.
+
+**Regras**
+- **Número** sequencial por ano, `AAAA-NNN` (`2026-001`; a partir do milésimo, `2026-1000`), atribuído pela função da base `proximo_numero_recibo(ano)`, imutável. O ano é o da data do recibo. Dois pedidos ao mesmo tempo nunca recebem o mesmo número: o contador do ano fica preso até ao fim da operação; se a operação falhar, o número volta atrás e não há saltos.
+- **Um recibo nunca se apaga.** Um recibo errado anula-se (`anulado`, com nota obrigatória, quem e quando) e emite-se outro, com número novo. O PDF anulado fica no Storage.
+- Um recibo liga-se a uma quota paga e ao associado. Cada quota tem, no máximo, um recibo emitido (a base garante-o); os anulados ficam como histórico.
+- **Conteúdo do PDF**, uma página A4: "Recibo n.º AAAA-NNN" e, por baixo, "Reçu de cotisation"; a data por extenso; Matinés Pensantes ASBL; número de empresa 1044.742.359; a sede (`sede_morada`); o nome completo do associado (do pedido e, sem pedido, do contacto); o valor ("40 €"); "Quota de associado, exercício até 31 de Dezembro de {ano}", com o ano da quota; o nome do tesoureiro (`tesoureiro_nome`), com o rótulo "O tesoureiro". Sem assinatura. Rajdhani nos títulos e rótulos, Montserrat no texto, azul-marinho, carmim só no título, rótulos em cinzento #828487, filetes #D5DCE2. O "º", que o Rajdhani não tem, sai em Montserrat.
+- **Email**: o 11 quando a quota é a primeira do associado (a da adesão), o 18 nas renovações, pelo Resend, com o PDF em anexo ("Recibo AAAA-NNN.pdf"). `{numero_recibo}`, `{ano}` e `{valor_quota}` vêm do recibo e da quota. Fica registado em `emails_enviados` com o recibo (`recibo_id`).
+
+**Modelo de dados (migração 014, aditiva)**
+```
+recibos             id, numero (único, 'AAAA-NNN'), ano, quota_id (quotas), associado_id (associados),
+                    data, valor, ficheiro (caminho no bucket, 'AAAA/AAAA-NNN.pdf'), estado ('emitido' | 'anulado'),
+                    nota, emitido_por (perfis), anulado_por (perfis), anulado_em, created_at
+recibos_contadores  ano, ultimo          só a função proximo_numero_recibo lhe toca
+emails_enviados     + recibo_id (recibos), vazio em todos os outros envios
+```
+- Funções da base: `proximo_numero_recibo(ano)` (security definer, só ela escreve no contador); `emitir_recibo(quota_id, data)`, que numa só operação verifica que quem chama tem perfil, que a quota está paga, sem recibo emitido e sem recibo registado fora da app, atribui o número, cria o recibo e marca `recibo_numero` e `recibo_data` na quota; `anular_recibo(recibo_id, nota)`, que marca o recibo como anulado e limpa `recibo_numero` e `recibo_data` na quota. As duas últimas correm com a sessão de quem chama (security invoker).
+- RLS: `recibos` lê-se, cria-se e altera-se por `authenticated`; não há política de apagar. `recibos_contadores` não tem políticas.
+- Envios de recibos: o índice único dos envios (§16.9) deixa de se aplicar às linhas com `recibo_id`, porque um recibo pode ser reenviado; para elas, um índice próprio impede duas reservas `a_enviar` do mesmo recibo ao mesmo tempo.
+- **Storage**: bucket privado `recibos`, só PDF, até 2 MB. `authenticated` lê e guarda; ninguém altera nem apaga. As funções com a chave de serviço passam por cima (a passagem diária só lê).
+- Configuração: `sede_morada` e `tesoureiro_nome`, vazias; sem elas não se emite.
+
+**Função `emitir-recibo`** (Edge Function, `verify_jwt = true`)
+- Corre com a sessão de quem carrega: fala com a base com o JWT da pessoa e a chave pública (`SUPABASE_ANON_KEY`, que a Supabase injecta), nunca com a chave de serviço; o RLS aplica-se e uma conta sem perfil é recusada.
+- **Emitir** (`quota_id`): valida tudo antes de haver número (quota paga e sem recibo, nome do associado, `sede_morada` e `tesoureiro_nome`, fontes); chama `emitir_recibo`; gera o PDF (`pdf-lib`); guarda-o no bucket; envia o 11 ou o 18 com o PDF; grava em `emails_enviados`. Se o email falhar, o recibo fica emitido e o envio `falhou`: a passagem diária tenta de novo com o mesmo PDF. Se o PDF não chegar ao Storage, o recibo fica emitido sem ficheiro e "Emitir" na mesma quota conclui-o com o mesmo número (não se gasta um número novo nem fica um salto).
+- **Pré-visualizar** (`quota_id`): o mesmo PDF, sem número ("atribuído ao emitir") e com a marca "Pré-visualização: sem número, sem validade". Nada é gravado e nenhum número é gasto.
+- **Reenviar** (`recibo_id`): o mesmo PDF, lido do Storage, num envio novo.
+- **Anular**: não passa pela função; o admin chama `anular_recibo` directamente, com a nota.
+- As fontes (Rajdhani Bold e SemiBold, Montserrat Regular e SemiBold) estão dentro da pasta da função, em `emitir-recibo/fonts/`, como ficheiros estáticos (`static_files` no `config.toml`), com a licença SIL Open Font License 1.1 em `fonts/LICENSE`. Nada se vai buscar à rede. Sem fontes, não há recibo (antes de atribuir o número).
+- Bibliotecas: `pdf-lib` e `@pdf-lib/fontkit` (precisa dela para usar fontes que não sejam as 14 do PDF), só na função, por `npm:`. A aplicação não ganha dependências.
+
+**Passagem diária**: no fim, os recibos emitidos com PDF e sem nenhum envio enviado ou em curso recebem uma nova tentativa do 11 ou do 18, com o PDF guardado. Um recibo sem PDF só fica num aviso do resumo.
+
+**Ecrãs** (fase seguinte, depois do ok ao SPEC, à migração e à função)
+- Ficha do associado, numa quota paga sem recibo: **Emitir recibo**, que abre primeiro a pré-visualização do PDF e o email que o acompanha, com "Emitir e enviar" e "Cancelar". Depois de emitido: número, data e estado do envio, com **Descarregar**, **Reenviar** e, como saída, **Anular** (pede a nota). Um recibo anulado fica na lista da quota, riscado, com a nota.
+- **Recibo emitido fora da app** substitui "Registar recibo": só para casos excepcionais, numa linha à parte, discreta, por baixo das acções do recibo, com o número e a data à mão, como hoje.
+- Vista **Recibos** nos Associados (`?s=associados&v=recibos`, depois de Associados): por ano, o mais recente primeiro; número, data, associado, valor e estado (emitido, anulado), com ligação para a ficha do associado. **Exportar ano** descarrega um zip com os PDFs do ano e um CSV (número, data, associado, valor, estado, nota), para a contabilidade. O zip é feito no browser, sem biblioteca nova (formato zip sem compressão: os PDF já vêm comprimidos).
+- Barra de números: o terceiro cartão fica "Interessados sem pedido" (decidido no mesmo dia, §16.16). "Quotas pagas sem recibo" aparece no topo da vista Recibos e na ficha do associado, onde o gesto se faz: é trabalho do tesoureiro logo a seguir a cada admissão, enquanto os interessados são o funil de todos. Se se quiser na barra, o lugar é o quarto cartão, que já é o único que pede acção.
+- O ficheiro público não muda: tudo isto vive no separador Associados, carregado à parte.
+
+### 16.18 Enviar teste para mim (6 de Novembro de 2026)
+- Na pré-visualização de cada email-tipo, **Enviar teste para mim** envia o assunto e o texto tal como estão preenchidos (com o texto em edição, mesmo antes de gravar) para o email da conta com sessão, com o assunto prefixado "[TESTE] ". Só com todos os campos preenchidos, como "Copiar".
+- Edge Function `enviar-teste`, com `verify_jwt`: corre com a sessão de quem carrega, recusa contas sem perfil e envia pelo Resend com o mesmo remetente e o mesmo HTML mínimo dos outros emails. Não grava em `emails_enviados`, não conta nos limites de unicidade e não usa a chave de serviço.
 
 ## 17. Apresentação do admin (acrescentado a 5 de Novembro de 2026)
 
