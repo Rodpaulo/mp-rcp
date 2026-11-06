@@ -12,6 +12,7 @@ import Interessados from './Interessados.jsx'
 import ListaAssociados from './ListaAssociados.jsx'
 import PedidoFicha from './PedidoFicha.jsx'
 import PedidoForm from './PedidoForm.jsx'
+import Recibos from './Recibos.jsx'
 import Pedidos from './Pedidos.jsx'
 import './Associados.css'
 
@@ -19,6 +20,7 @@ const VISTAS = [
   { valor: 'interessados', rotulo: 'Interessados' },
   { valor: '', rotulo: 'Pedidos' },
   { valor: 'associados', rotulo: 'Associados' },
+  { valor: 'recibos', rotulo: 'Recibos' },
   { valor: 'emails', rotulo: 'Emails-tipo' },
   { valor: 'enviados', rotulo: 'Emails enviados' },
   { valor: 'config', rotulo: 'Configuração' },
@@ -32,13 +34,14 @@ const VISTAS = [
 //   ?s=associados&p=<id>          ficha do pedido
 //   ?s=associados&v=associados    associados
 //   ?s=associados&a=<id>          ficha do associado
+//   ?s=associados&v=recibos       recibos, por ano, com "Exportar ano" (SPEC 16.17)
 //   ?s=associados&v=emails        emails-tipo
 //   ?s=associados&e=<chave>       editar email-tipo, com pré-visualização
 //   ?s=associados&v=enviados      últimos 100 envios
 //   ?s=associados&v=config        configuração
 // Interessados, pedidos e associados em mesa de trabalho (SPEC 17.4): cada ficha ao lado da sua lista
 // (o interessado com o mesmo st, v=interessados; o pedido com o mesmo st; o associado com v=associados).
-// Emails-tipo, Emails enviados e Configuração em largura total.
+// Recibos, Emails-tipo, Emails enviados e Configuração em largura total.
 export default function Associados() {
   const [searchParams, setSearchParams] = useSearchParams()
   const pedido = searchParams.get('p')
@@ -105,6 +108,7 @@ export default function Associados() {
               onAbrirInteressado={(id) => irPara({ v: 'interessados', st: 'todos', i: id })}
             />
           )}
+          {vista === 'recibos' && <Recibos onAbrirAssociado={abrirAssociado} />}
           {vista === 'config' && <Configuracao />}
         </div>
       </>

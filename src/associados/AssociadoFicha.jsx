@@ -1,79 +1,22 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { LOAD_ERROR, SAVE_ERROR, formatDate } from '../admin/text.js'
+import { LOAD_ERROR, formatDate } from '../admin/text.js'
 import { dataBruxelas, euros } from '../../supabase/functions/_shared/campos.js'
-import { listarEnviosDoAssociado, listarPerfis, obterAssociado, registarRecibo } from './api.js'
+import { listarEnviosDoAssociado, listarPerfis, listarRecibosDoAssociado, obterAssociado } from './api.js'
 import Envios from './Envios.jsx'
+import ReciboQuota from './ReciboQuota.jsx'
 import { ESTADOS_ASSOCIADO, TIPOS_ASSOCIADO, nomeDoAssociado, rotulo } from './textos.js'
 import Dados from '../admin/mesa/Dados.jsx'
 import FichaCartao from '../admin/mesa/FichaCartao.jsx'
 import Pilula from '../admin/mesa/Pilula.jsx'
-
-// "Registar recibo" numa quota paga: número e data (hoje por omissão).
-function Recibo({ quota, onFeito }) {
-  const hoje = dataBruxelas()
-  const [aberto, setAberto] = useState(false)
-  const [numero, setNumero] = useState(quota.recibo_numero ?? '')
-  const [data, setData] = useState(quota.recibo_data ?? hoje)
-  const [aGravar, setAGravar] = useState(false)
-  const [erro, setErro] = useState('')
-
-  if (!aberto) {
-    return (
-      <button type="button" className="admin-button-secondary" onClick={() => setAberto(true)}>
-        {quota.recibo_numero ? 'Corrigir recibo' : 'Registar recibo'}
-      </button>
-    )
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault()
-    setAGravar(true)
-    setErro('')
-    try {
-      await registarRecibo(quota.id, numero, data)
-      onFeito()
-    } catch (error) {
-      console.error('registar recibo falhou:', error)
-      setErro(SAVE_ERROR)
-      setAGravar(false)
-    }
-  }
-
-  return (
-    <form className="assoc-recibo" onSubmit={handleSubmit}>
-      <label className="admin-field">
-        <span>Número do recibo</span>
-        <input required value={numero} onChange={(event) => setNumero(event.target.value)} />
-      </label>
-      <label className="admin-field">
-        <span>Data do recibo</span>
-        <input type="date" required max={hoje} value={data} onChange={(event) => setData(event.target.value)} />
-      </label>
-      {erro && (
-        <p className="admin-error" role="alert">
-          {erro}
-        </p>
-      )}
-      <div className="assoc-accoes">
-        <button type="submit" className="admin-button" disabled={aGravar}>
-          {aGravar ? 'Um momento…' : 'Gravar recibo'}
-        </button>
-        <button type="button" className="admin-button-secondary" onClick={() => setAberto(false)}>
-          Cancelar
-        </button>
-      </div>
-    </form>
-  )
-}
 
 export default function AssociadoFicha({ id, onLista, onAbrirPedido }) {
   const [dados, setDados] = useState(undefined)
   const [erro, setErro] = useState(false)
 
   const recarregar = useCallback(() => {
-    return Promise.all([obterAssociado(id), listarEnviosDoAssociado(id), listarPerfis()]).then(
-      ([associado, envios, perfis]) => setDados(associado ? { associado, envios, perfis } : null),
+    return Promise.all([obterAssociado(id), listarEnviosDoAssociado(id), listarPerfis(), listarRecibosDoAssociado(id)]).then(
+      ([associado, envios, perfis, recibos]) => setDados(associado ? { associado, envios, perfis, recibos } : null),
       (error) => {
         console.error('carregar associado falhou:', error)
         setErro(true)
@@ -104,10 +47,11 @@ export default function AssociadoFicha({ id, onLista, onAbrirPedido }) {
   }
   if (dados === undefined) return <p>A carregar…</p>
 
-  const { associado: a, envios, perfis } = dados
+  const { associado: a, envios, perfis, recibos } = dados
   const quotas = [...a.quotas].sort((x, y) => y.ano - x.ano)
   const email = a.pedido?.email ?? a.contacto?.email
   const admitidoPor = perfis.find((p) => p.id === a.admitido_por)?.nome
+  const semRecibo = quotas.filter((q) => q.estado === 'paga' && !q.recibo_numero).length
 
   return (
     <>
@@ -142,7 +86,12 @@ export default function AssociadoFicha({ id, onLista, onAbrirPedido }) {
         />
       </FichaCartao>
 
-      <FichaCartao titulo="Quotas">
+      <FichaCartao titulo="Quotas e recibos">
+        {semRecibo > 0 && (
+          <p className="assoc-aviso">
+            {semRecibo === 1 ? 'Uma quota paga sem recibo.' : `${semRecibo} quotas pagas sem recibo.`}
+          </p>
+        )}
         {quotas.length === 0 ? (
           <p>Sem quotas registadas.</p>
         ) : (
@@ -152,12 +101,16 @@ export default function AssociadoFicha({ id, onLista, onAbrirPedido }) {
                 <p className="assoc-quota-cabeca">
                   {q.ano} · {euros(q.valor)} · {q.estado === 'paga' ? `paga a ${formatDate(q.data_pagamento)}` : 'por pagar'}
                 </p>
-                <p className="assoc-linha-detalhe">
-                  {q.recibo_numero
-                    ? `Recibo n.º ${q.recibo_numero}${q.recibo_data ? `, de ${formatDate(q.recibo_data)}` : ''}`
-                    : 'Sem recibo registado'}
-                </p>
-                {q.estado === 'paga' && <Recibo key={`${q.id}-${q.recibo_numero}`} quota={q} onFeito={recarregar} />}
+                {q.estado === 'paga' && (
+                  <ReciboQuota
+                    key={q.id}
+                    quota={q}
+                    associado={a}
+                    recibos={recibos.filter((r) => r.quota_id === q.id)}
+                    envios={envios}
+                    onMudou={recarregar}
+                  />
+                )}
               </li>
             ))}
           </ul>

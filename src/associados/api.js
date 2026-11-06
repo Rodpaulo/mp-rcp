@@ -304,6 +304,91 @@ export async function listarEnviosDaPessoa(personId) {
   )
 }
 
+// ---------- recibos (SPEC 16.17) ----------
+
+const CAMPOS_RECIBO = 'id, numero, ano, quota_id, associado_id, data, valor, ficheiro, estado, nota, emitido_por, anulado_por, anulado_em'
+
+export async function listarRecibosDoAssociado(associadoId) {
+  return semErro(
+    await supabase.from('recibos').select(CAMPOS_RECIBO).eq('associado_id', associadoId).order('numero', { ascending: false }),
+  )
+}
+
+// Todos os recibos, o mais recente primeiro, com o nome do associado (vista Recibos).
+export async function listarRecibos() {
+  return semErro(
+    await supabase
+      .from('recibos')
+      .select(
+        `${CAMPOS_RECIBO},
+        associado:associados!recibos_associado_id_fkey(id, numero,
+          contacto:contactos!associados_contacto_id_fkey(nome),
+          pedido:pedidos_adesao!associados_pedido_id_fkey(nome_completo))`,
+      )
+      .order('numero', { ascending: false }),
+  )
+}
+
+// Quotas pagas sem recibo (nem emitido na app nem registado fora dela).
+export async function listarQuotasPagasSemRecibo() {
+  return semErro(
+    await supabase
+      .from('quotas')
+      .select(
+        `id, ano, valor, data_pagamento,
+        associado:associados!quotas_associado_id_fkey(id, numero,
+          contacto:contactos!associados_contacto_id_fkey(nome),
+          pedido:pedidos_adesao!associados_pedido_id_fkey(nome_completo))`,
+      )
+      .eq('estado', 'paga')
+      .is('recibo_numero', null)
+      .order('ano'),
+  )
+}
+
+// Chamada a uma Edge Function com a sessão (verify_jwt). As recusas trazem { erro } para mostrar.
+async function chamarFuncao(nome, corpo) {
+  const { data, error } = await supabase.functions.invoke(nome, { body: corpo })
+  if (error) {
+    let mensagem = null
+    try {
+      mensagem = (await error.context.json()).erro
+    } catch {
+      // sem corpo JSON: fica o erro genérico
+    }
+    throw mensagem ? aviso(mensagem) : error
+  }
+  return data
+}
+
+// O PDF sem número (Blob); nada é gravado.
+export function previsualizarRecibo(quotaId) {
+  return chamarFuncao('emitir-recibo', { accao: 'previsualizar', quota_id: quotaId })
+}
+
+// { recibo, envio: { resultado, motivo?, email } }
+export function emitirRecibo(quotaId) {
+  return chamarFuncao('emitir-recibo', { accao: 'emitir', quota_id: quotaId })
+}
+
+export function reenviarRecibo(reciboId) {
+  return chamarFuncao('emitir-recibo', { accao: 'reenviar', recibo_id: reciboId })
+}
+
+// Migração 014: anula e limpa recibo_numero e recibo_data na quota.
+export async function anularRecibo(reciboId, nota) {
+  return semErro(await supabase.rpc('anular_recibo', { p_recibo_id: reciboId, p_nota: nota.trim() }))
+}
+
+export async function descarregarRecibo(ficheiro) {
+  return semErro(await supabase.storage.from('recibos').download(ficheiro))
+}
+
+// "Enviar teste para mim" (SPEC 16.18): devolve { para }.
+export function enviarTeste(assunto, corpo) {
+  return chamarFuncao('enviar-teste', { assunto, corpo })
+}
+
 // ---------- emails_tipo ----------
 
 export async function listarEmailsTipo() {
@@ -351,7 +436,7 @@ export function preencherEmail(tipo, campos, hoje) {
 
 // ---------- emails_enviados ----------
 
-const CAMPOS_ENVIO = 'id, email_tipo, pedido_id, associado_id, person_id, periodo, destinatario, assunto, enviado_em, estado, resposta_provider'
+const CAMPOS_ENVIO = 'id, email_tipo, pedido_id, associado_id, person_id, recibo_id, periodo, destinatario, assunto, enviado_em, estado, resposta_provider'
 
 export async function listarEnviosDoPedido(pedidoId) {
   return semErro(

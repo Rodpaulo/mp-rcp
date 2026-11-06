@@ -75,7 +75,8 @@ export function numeroEmail(chave) {
 }
 
 // Os emails que a direcção envia fora da aplicação: só estes têm "Copiar texto preenchido".
-export const MANUAIS = ['01_convite_pendentes', '11_recibo_adesao', '14_inscricoes_antecipadas', '15_propostas_programacao', '18_quota_paga_recibo']
+// O 11 e o 18 saem com o recibo, pela função emitir-recibo (SPEC 16.17).
+export const MANUAIS = ['01_convite_pendentes', '14_inscricoes_antecipadas', '15_propostas_programacao']
 
 // De onde vêm os dados da pré-visualização de cada email.
 export function fonteDoEmail(chave) {
@@ -115,7 +116,7 @@ export const CAMPOS = [
   { nome: 'ano', descricao: 'Ano a que a quota se refere', origem: 'Quota' },
   { nome: 'IBAN', descricao: 'IBAN da conta da associação', origem: 'Configuração' },
   { nome: 'titular_conta', descricao: 'Titular da conta bancária', origem: 'Configuração' },
-  { nome: 'numero_recibo', descricao: 'Número do recibo emitido', origem: 'Quota (Registar recibo)' },
+  { nome: 'numero_recibo', descricao: 'Número do recibo emitido (AAAA-NNN)', origem: 'Recibo (Emitir recibo)' },
   { nome: 'proxima_sessao', descricao: 'Data e tema da próxima sessão do RCP', origem: 'Configuração' },
   { nome: 'consequencia_90_dias', descricao: 'O que acontece ao pedido após 90 dias sem pagamento', origem: 'Configuração (por decidir)' },
   { nome: 'mes_regresso', descricao: 'Mês em que a programação recomeça depois de Agosto', origem: 'Configuração' },

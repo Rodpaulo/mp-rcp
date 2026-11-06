@@ -10,6 +10,7 @@ import {
   preencher,
 } from '../../supabase/functions/_shared/campos.js'
 import {
+  enviarTeste,
   gravarEmailTipo,
   lerConfiguracao,
   listarAssociados,
@@ -112,6 +113,8 @@ export default function EmailTipoForm({ chave, onVoltar }) {
   const [aGravar, setAGravar] = useState(false)
   const [estadoGravar, setEstadoGravar] = useState('') // '' | 'gravado' | 'erro'
   const [copia, setCopia] = useState('')
+  const [teste, setTeste] = useState('')
+  const [aTestar, setATestar] = useState(false)
 
   useEffect(() => {
     let activo = true
@@ -171,6 +174,20 @@ export default function EmailTipoForm({ chave, onVoltar }) {
       setEstadoGravar('erro')
     } finally {
       setAGravar(false)
+    }
+  }
+
+  async function testar() {
+    setATestar(true)
+    setTeste('')
+    try {
+      const r = await enviarTeste(prev.assunto.texto, prev.corpo.texto)
+      setTeste(`Teste enviado para ${r.para}, com o assunto começado por "[TESTE]".`)
+    } catch (error) {
+      console.error('enviar teste falhou:', error)
+      setTeste(error?.aviso ? error.message : 'Não foi possível enviar o teste. Tenta outra vez.')
+    } finally {
+      setATestar(false)
     }
   }
 
@@ -283,7 +300,9 @@ export default function EmailTipoForm({ chave, onVoltar }) {
 
       <section className="admin-section">
         <h2>Pré-visualização</h2>
-        <p className="assoc-nota">Com o texto acima, mesmo antes de gravar. Copiar não regista envio.</p>
+        <p className="assoc-nota">
+          Com o texto acima, mesmo antes de gravar. Copiar e enviar um teste não registam envio.
+        </p>
 
         <EscolhaRegisto
           titulo={FONTES[fonte]}
@@ -336,6 +355,17 @@ export default function EmailTipoForm({ chave, onVoltar }) {
           <p className="assoc-previsualizacao-assunto">{prev.assunto.texto}</p>
           <p className="assoc-texto">{prev.corpo.texto}</p>
         </div>
+
+        <div className="assoc-accoes">
+          <button type="button" className="mesa-botao-discreto" disabled={emFalta.length > 0 || aTestar} onClick={testar}>
+            {aTestar ? 'Um momento…' : 'Enviar teste para mim'}
+          </button>
+        </div>
+        {teste && (
+          <p className="assoc-nota" role="status">
+            {teste}
+          </p>
+        )}
 
         {manual && (
           <div className="assoc-accoes">

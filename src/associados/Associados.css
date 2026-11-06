@@ -358,3 +358,44 @@ ul.assoc-nota {
   background: var(--background);
   border-style: dotted;
 }
+
+/* ---------- Recibos (SPEC 16.17) ---------- */
+
+.assoc-recibo-quota {
+  margin-top: 0.5rem;
+}
+
+.assoc-recibo-quota .mesa-accoes {
+  margin-top: 0.5rem;
+}
+
+.assoc-recibo-fora {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+}
+
+.assoc-recibo-anulado {
+  color: #828487;
+}
+
+.assoc-emissao {
+  margin-top: 0.75rem;
+}
+
+.assoc-pdf {
+  display: block;
+  width: 100%;
+  height: 32rem;
+  margin: 0 0 1rem;
+  border: 1px solid #D5DCE2;
+  border-radius: 6px;
+}
+
+.assoc-sem-recibo {
+  max-width: 14rem;
+  margin: 0 0 1rem;
+}
+
+.assoc-sem-recibo .mesa-cartao-numero {
+  border: 1px solid #D5DCE2;
+}
