@@ -267,6 +267,9 @@ Secção Biblioteca no admin (catálogo, movimentos por edição, correcções, 
   - `invalid_number`, `invalid_email`, `no_open_edition` e erro de rede → as frases que a página já usa.
 - Guarda o email em `localStorage` como os outros formulários (só se ainda não havia nenhum).
 
+**Decisões do Miguel (15 de Novembro de 2026)**: email opcional, como em "Deixo um livro"; o cartão impresso só ganha o quinto passo na próxima impressão; o aumento do ficheiro público é aceite.
+- O número mal escrito é reconhecido na própria página, com a mesma regra de `normalise_book_number` (de 1 a 3 algarismos, maior do que zero), porque `livro_por_numero` devolve o mesmo vazio para "mal escrito" e "não existe".
+
 **O que não muda**
 - Base: a devolução continua a ser um movimento `entrada`, com `source = 'self'`, e o livro volta a `na_mesa`. Conta nas "entradas" de `biblioteca_resumo` e no "já esteve em N casas", como hoje.
 - Admin: nenhuma alteração. No histórico do livro, a devolução aparece como entrada.
@@ -274,7 +277,7 @@ Secção Biblioteca no admin (catálogo, movimentos por edição, correcções, 
 
 **Regras de construção**
 - Só `src/pages/Biblioteca.jsx` (e, se for preciso, `Biblioteca.css`) mudam. Sem dependências novas.
-- A página `/biblioteca` vai no ficheiro público. O §17.6 diz que esse ficheiro "só pode diminuir"; este formulário acrescenta-lhe pouco (estimativa: menos de 2 kB antes de comprimir) e reaproveita os campos e a consulta que já existem. Desvio registado aqui.
+- A página `/biblioteca` vai no ficheiro público. O §17.6 diz que esse ficheiro "só pode diminuir"; este formulário acrescenta-lhe 2,3 kB antes de comprimir (0,3 kB comprimido) e reaproveita os campos e a consulta que já existem. Desvio registado aqui e aceite pelo Miguel a 15 de Novembro de 2026.
 - Calendário: o mesmo do §18.11. Nada vai para produção entre 28 de Novembro e 2 de Dezembro de 2026; se não estiver pronto e controlado até 27 de Novembro, publica-se a partir de 3 de Dezembro e, no RCP07, as devoluções fazem-se por "Deixo um livro", como hoje.
 
 **Controlos antes de publicar** (na pré-visualização da Vercel, com livros de teste)

@@ -13,6 +13,7 @@ const TEXT = {
   closed: 'Não há nenhuma edição aberta neste momento.',
   inUse: 'Esse número já está em uso. Usa o próximo autocolante da folha.',
   missingTitle: 'Falta o título.',
+  onTable: 'Este livro já está na mesa. Se o tens na mão, diz à organização.',
   // A mesma frase da página de check-in.
   error: 'Não conseguimos registar agora. Tenta outra vez daqui a um minuto, ou diz à organização.',
 }
@@ -337,6 +338,109 @@ function LeaveForm({ onDone, onBack }) {
   )
 }
 
+// A mesma regra da base (normalise_book_number, migração 003): de 1 a 3 algarismos, maior do que zero.
+function looksLikeBookNumber(raw) {
+  const digits = raw.replace(/[^0-9]/g, '')
+  return /^[0-9]{1,3}$/.test(digits) && Number(digits) > 0
+}
+
+// Devolvo um livro (SPEC 13.11): só para livros levados ou desaparecidos. Usa deixar_livro, que já
+// trata o regresso (estado 'returned'); sem título, esta função nunca cria um livro novo.
+function ReturnForm({ onDone, onBack }) {
+  const [number, setNumber] = useState('')
+  const [email, setEmail] = useState(() => readKey(KEY_EMAIL) ?? '')
+  const [sending, setSending] = useState(false)
+  const [message, setMessage] = useState('')
+  const [lookup, checkNow] = useBookLookup(number)
+
+  const found = lookup.state === 'found'
+  const onTable = found && lookup.book.status === 'na_mesa'
+  const canReturn = found && !onTable
+  const malformed = number.trim() !== '' && !looksLikeBookNumber(number)
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    if (!canReturn) return
+
+    const normalized = email.trim().toLowerCase()
+    setSending(true)
+    setMessage('')
+    try {
+      const { data, error } = await supabase.rpc('deixar_livro', {
+        p_number: number.trim(),
+        p_title: null,
+        p_author: null,
+        p_note: null,
+        p_email: normalized || null,
+      })
+      if (error) throw error
+
+      switch (data?.status) {
+        case 'returned':
+          rememberEmail(normalized)
+          onDone(`Bem-vindo de volta, «${data.title}». Obrigado por o trazeres.`)
+          return
+        case 'number_in_use':
+          setMessage(TEXT.onTable)
+          break
+        case 'missing_title':
+          // O número deixou de existir entre a consulta e o envio.
+          setMessage(TEXT.notFound)
+          break
+        case 'invalid_number':
+          setMessage(TEXT.invalidNumber)
+          break
+        case 'invalid_email':
+          setMessage(TEXT.invalidEmail)
+          break
+        case 'no_open_edition':
+          setMessage(TEXT.closed)
+          break
+        default:
+          throw new Error(`resposta inesperada de deixar_livro: ${JSON.stringify(data)}`)
+      }
+    } catch (error) {
+      console.error('deixar_livro falhou:', error)
+      setMessage(TEXT.error)
+    }
+    setSending(false)
+  }
+
+  return (
+    <form className="bc-form" onSubmit={handleSubmit} noValidate>
+      <h2 className="bc-subtitle">Devolvo um livro</h2>
+      <p className="bc-instruction">Escreve o número do autocolante que está na contracapa.</p>
+
+      <NumberField id="bc-return-number" value={number} onChange={setNumber} onBlur={checkNow} disabled={sending} />
+      {canReturn && <p className="bc-hint">{titleWithAuthor(lookup.book)}</p>}
+      {onTable && <p className="bc-hint">{TEXT.onTable}</p>}
+      {malformed && <p className="bc-hint">{TEXT.invalidNumber}</p>}
+      {!malformed && lookup.state === 'missing' && <p className="bc-hint">{TEXT.notFound}</p>}
+
+      <EmailField
+        id="bc-return-email"
+        label="O teu email (opcional)"
+        value={email}
+        onChange={setEmail}
+        disabled={sending}
+      />
+
+      {message && (
+        <p className="bc-message" role="alert">
+          {message}
+        </p>
+      )}
+
+      <button type="submit" className="bc-button bc-confirm" disabled={sending || !canReturn}>
+        {sending ? 'Um momento…' : 'Devolvo este'}
+      </button>
+      <button type="button" className="bc-link bc-back" onClick={onBack}>
+        Voltar
+      </button>
+    </form>
+  )
+}
+
 function BookList({ books }) {
   if (books.length === 0) {
     return <p className="bc-empty">{TEXT.empty}</p>
@@ -363,7 +467,7 @@ function BookList({ books }) {
 }
 
 export default function Biblioteca() {
-  // view: 'list' | 'take' | 'leave' | 'done'
+  // view: 'list' | 'take' | 'leave' | 'return' | 'done'
   const [view, setView] = useState('list')
   // null enquanto a lista não chega (ou se não chegou)
   const [books, setBooks] = useState(null)
@@ -417,12 +521,16 @@ export default function Biblioteca() {
             <button type="button" className="bc-button bc-choice" onClick={() => setView('leave')}>
               Deixo um livro
             </button>
+            <button type="button" className="bc-button bc-choice" onClick={() => setView('return')}>
+              Devolvo um livro
+            </button>
           </div>
         </section>
       )}
 
       {view === 'take' && <TakeForm onDone={handleDone} onBack={backToList} />}
       {view === 'leave' && <LeaveForm onDone={handleDone} onBack={backToList} />}
+      {view === 'return' && <ReturnForm onDone={handleDone} onBack={backToList} />}
 
       {view === 'done' && (
         <section>
