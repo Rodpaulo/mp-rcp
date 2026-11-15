@@ -1,5 +1,5 @@
 // Números da barra do separador RCP (SPEC 17.3) e o nome de quem está com sessão (17.2).
-// Leituras só: a edição aberta e edition_summary, como o painel; perfis.
+// Leituras só: a edição aberta e edition_summary_v2 (SPEC 18.6), como o painel; perfis.
 
 import { supabase } from '../lib/supabase.js'
 
@@ -12,7 +12,7 @@ export async function lerNumerosRcp() {
   const [aberta, resumo] = await Promise.all([
     supabase.from('editions').select('code, room_count').eq('is_open', true).maybeSingle().then(semErro),
     supabase
-      .from('edition_summary')
+      .from('edition_summary_v2')
       .select('registered, present, registered_absent')
       .eq('is_open', true)
       .maybeSingle()

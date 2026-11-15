@@ -3,8 +3,15 @@ import { yesNo } from './text.js'
 
 export default function Checkins({ edition, presences }) {
   function handleExport() {
-    const rows = presences.map((p) => [p.email, p.time, p.source, yesNo(p.registered), yesNo(p.newsletter)])
-    const csv = buildCsv(['email', 'hora', 'origem', 'inscrito', 'newsletter'], rows)
+    const rows = presences.map((p) => [
+      p.email,
+      p.time,
+      p.source,
+      yesNo(p.registered),
+      yesNo(p.newsletter),
+      yesNo(p.cancelled),
+    ])
+    const csv = buildCsv(['email', 'hora', 'origem', 'inscrito', 'newsletter', 'cancelado no pretix'], rows)
     downloadCsv(`${edition.code}-presencas.csv`, csv)
   }
 

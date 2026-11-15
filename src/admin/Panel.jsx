@@ -13,10 +13,10 @@ async function fetchAll() {
   const [editionsRes, summaryRes] = await Promise.all([
     supabase
       .from('editions')
-      .select('id, code, title, event_date, is_open, room_count')
+      .select('id, code, title, event_date, is_open, room_count, pretix_event')
       .order('event_date', { ascending: false }),
     supabase
-      .from('edition_summary')
+      .from('edition_summary_v2')
       .select('code, registered, present, walk_ins')
       .eq('is_open', true)
       .maybeSingle(),
@@ -34,7 +34,10 @@ async function fetchAll() {
         .select('person_id, source, checked_in_at, people(email, newsletter_consent)')
         .eq('edition_id', open.id)
         .order('checked_in_at', { ascending: false }),
-      supabase.from('registrations').select('person_id, people(email)').eq('edition_id', open.id),
+      supabase
+        .from('registrations')
+        .select('person_id, cancelled_at, people(email)')
+        .eq('edition_id', open.id),
     ])
     if (checkinsRes.error) throw checkinsRes.error
     if (registrationsRes.error) throw registrationsRes.error
@@ -98,7 +101,10 @@ export default function Panel() {
   if (!data) return refreshLine
 
   const { editions, open, summary, checkins, registrations } = data
+  // Cancelamentos do pretix (SPEC 18.6): a presença manda. Um cancelado que veio conta como inscrito;
+  // um cancelado que não veio não conta como ausente.
   const registeredIds = new Set(registrations.map((r) => r.person_id))
+  const cancelledIds = new Set(registrations.filter((r) => r.cancelled_at).map((r) => r.person_id))
   const presentIds = new Set(checkins.map((c) => c.person_id))
 
   const presences = checkins.map((c) => ({
@@ -107,11 +113,12 @@ export default function Panel() {
     time: formatTime(c.checked_in_at),
     source: c.source,
     registered: registeredIds.has(c.person_id),
+    cancelled: cancelledIds.has(c.person_id),
     newsletter: Boolean(c.people?.newsletter_consent),
   }))
 
   const absent = registrations
-    .filter((r) => !presentIds.has(r.person_id))
+    .filter((r) => !r.cancelled_at && !presentIds.has(r.person_id))
     .map((r) => ({ personId: r.person_id, email: r.people?.email ?? '' }))
     .sort((a, b) => a.email.localeCompare(b.email))
 

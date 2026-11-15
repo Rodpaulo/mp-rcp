@@ -748,7 +748,7 @@ Textos, tal como ficam:
   - sem edição aberta: "Não há nenhuma edição aberta neste momento."
   - qualquer outro: "Não foi possível guardar. Tenta outra vez."
 - Por baixo, com um filete: "Ou cola aqui o CSV exportado do pretix, ou escolhe o ficheiro." Na linha seguinte, em cinzento: "No pretix: Encomendas → Exportar, só as pagas." O resto do ecrã do ficheiro fica como está; o resultado diz "{novos} inscrições novas; {ja_estavam} já lá estavam".
-- Edições: campo **Evento no pretix** no formulário "Nova edição"; coluna "Pretix" na tabela; a ligação **Ligar ao pretix** nas edições sem evento (§18.2).
+- Edições: campo **Evento no pretix** no formulário "Nova edição"; coluna "Pretix" na tabela; a ligação **Ligar ao pretix** nas edições sem evento (§18.2), que pergunta "Forma curta do evento no pretix (a que aparece no endereço, ex.: rcp08):", já preenchida com o código em minúsculas. Uma forma curta fora da regra não se grava: "A forma curta só pode ter minúsculas, algarismos, hífenes e pontos."
 
 ### 18.8 Segredo
 - O token da API do pretix fica **só** nos segredos das Edge Functions da Supabase, com o nome `PRETIX_API_TOKEN`. Nunca no repositório, nunca no código do browser, nunca numa variável `VITE_`, nunca em ficheiros de exemplo (com ou sem valor: o `.env.example` não muda). Guardado também no Bitwarden da associação.

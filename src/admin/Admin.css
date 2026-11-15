@@ -239,6 +239,33 @@
   }
 
   .admin-new-edition {
-    grid-template-columns: 1fr 2fr 1fr auto;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
   }
+}
+
+/* Importar inscritos (SPEC 18.7): o ficheiro, por baixo do pretix, separado por um filete. */
+.admin-separador {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #D5DCE2;
+}
+
+.admin-ok p {
+  margin: 0.25rem 0;
+}
+
+/* Ligação em texto que faz uma acção ("Ligar ao pretix", SPEC 18.2): não é um botão (SPEC 17.4). */
+.admin-ligacao {
+  padding: 0;
+  font: inherit;
+  color: var(--turquoise-dark);
+  text-decoration: underline;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.admin-ligacao:disabled {
+  opacity: 0.6;
+  cursor: default;
 }

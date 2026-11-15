@@ -2,16 +2,25 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { SAVE_ERROR, formatDate, yesNo } from './text.js'
 
+// Forma curta do evento no pretix (SPEC 18.2): a mesma regra que a base confirma (migração 015).
+const PRETIX_EVENT = /^[a-z0-9][a-z0-9.-]*$/
+const PRETIX_INVALIDO = 'A forma curta só pode ter minúsculas, algarismos, hífenes e pontos.'
+
 export default function Editions({ editions, open, onChange }) {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState(false)
   const [code, setCode] = useState('')
   const [title, setTitle] = useState('')
   const [date, setDate] = useState('')
+  // Preenchido com o código em minúsculas até a pessoa o mudar à mão.
+  const [pretix, setPretix] = useState('')
+  const [pretixTouched, setPretixTouched] = useState(false)
+  const [message, setMessage] = useState('')
 
   async function run(action, label) {
     setSending(true)
     setError(false)
+    setMessage('')
     try {
       await action()
       await onChange()
@@ -37,13 +46,44 @@ export default function Editions({ editions, open, onChange }) {
     }, 'abrir edição')
   }
 
+  function handleCodeChange(value) {
+    setCode(value)
+    if (!pretixTouched) setPretix(value.trim().toLowerCase())
+  }
+
+  function handleLinkPretix(edition) {
+    const answer = window.prompt(
+      'Forma curta do evento no pretix (a que aparece no endereço, ex.: rcp08):',
+      edition.code.toLowerCase(),
+    )
+    if (answer === null) return
+    const value = answer.trim().toLowerCase()
+    if (!PRETIX_EVENT.test(value)) {
+      setMessage(PRETIX_INVALIDO)
+      return
+    }
+    run(async () => {
+      const { error: updateError } = await supabase
+        .from('editions')
+        .update({ pretix_event: value })
+        .eq('id', edition.id)
+      if (updateError) throw updateError
+    }, 'ligar ao pretix')
+  }
+
   async function handleCreate(event) {
     event.preventDefault()
+    const pretixEvent = pretix.trim().toLowerCase()
+    if (pretixEvent && !PRETIX_EVENT.test(pretixEvent)) {
+      setMessage(PRETIX_INVALIDO)
+      return
+    }
     const ok = await run(async () => {
       const { error: insertError } = await supabase.from('editions').insert({
         code: code.trim().toUpperCase(),
         title: title.trim() || null,
         event_date: date,
+        pretix_event: pretixEvent || null,
       })
       if (insertError) throw insertError
     }, 'criar edição')
@@ -51,6 +91,8 @@ export default function Editions({ editions, open, onChange }) {
       setCode('')
       setTitle('')
       setDate('')
+      setPretix('')
+      setPretixTouched(false)
     }
   }
 
@@ -62,6 +104,11 @@ export default function Editions({ editions, open, onChange }) {
           {SAVE_ERROR}
         </p>
       )}
+      {message && (
+        <p className="admin-error" role="alert">
+          {message}
+        </p>
+      )}
       <div className="admin-table-wrap">
         <table className="admin-table">
           <thead>
@@ -71,6 +118,7 @@ export default function Editions({ editions, open, onChange }) {
               <th>Data</th>
               <th>Aberta</th>
               <th>Contagem de sala</th>
+              <th>Pretix</th>
               <th></th>
             </tr>
           </thead>
@@ -82,6 +130,18 @@ export default function Editions({ editions, open, onChange }) {
                 <td>{formatDate(edition.event_date)}</td>
                 <td>{yesNo(edition.is_open)}</td>
                 <td>{edition.room_count ?? ''}</td>
+                <td>
+                  {edition.pretix_event ?? (
+                    <button
+                      type="button"
+                      className="admin-ligacao"
+                      onClick={() => handleLinkPretix(edition)}
+                      disabled={sending}
+                    >
+                      Ligar ao pretix
+                    </button>
+                  )}
+                </td>
                 <td>
                   {!edition.is_open && (
                     <button
@@ -104,11 +164,24 @@ export default function Editions({ editions, open, onChange }) {
       <form className="admin-new-edition" onSubmit={handleCreate}>
         <label className="admin-field">
           <span>Código</span>
-          <input required placeholder="RCP07" value={code} onChange={(event) => setCode(event.target.value)} />
+          <input required placeholder="RCP07" value={code} onChange={(event) => handleCodeChange(event.target.value)} />
         </label>
         <label className="admin-field">
           <span>Título (opcional)</span>
           <input value={title} onChange={(event) => setTitle(event.target.value)} />
+        </label>
+        <label className="admin-field">
+          <span>Evento no pretix</span>
+          <input
+            placeholder="rcp08"
+            value={pretix}
+            autoCapitalize="off"
+            spellCheck="false"
+            onChange={(event) => {
+              setPretix(event.target.value)
+              setPretixTouched(true)
+            }}
+          />
         </label>
         <label className="admin-field">
           <span>Data</span>
