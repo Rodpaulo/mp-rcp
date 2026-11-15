@@ -704,7 +704,7 @@ O pretix guarda cada inscrição como uma **encomenda**. De cada encomenda lê-s
   6. chama `importar_inscritos` (§18.5) **uma só vez**, com as duas listas, e devolve o resultado.
 - Se uma página falhar, nada é gravado: ou entra a lista inteira, ou nada.
 - **Sem dependências novas**: o pretix chama-se com `fetch`; a única biblioteca é a `@supabase/supabase-js`, como nas outras funções.
-- Ficheiro: `supabase/functions/pretix-inscritos/index.js`; no `config.toml`, `verify_jwt = true`.
+- Ficheiros: `supabase/functions/pretix-inscritos/index.js` (sessão, base, respostas) e `pretix.js` (pedidos ao pretix e separação das encomendas, sem importações, para se poder experimentar fora da função); no `config.toml`, `verify_jwt = true`.
 
 ### 18.5 Função da base `importar_inscritos` (migração 016)
 `importar_inscritos(p_edition_code text, p_inscritos jsonb, p_cancelados text[] default '{}')` → `jsonb`

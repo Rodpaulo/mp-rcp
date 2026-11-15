@@ -24,3 +24,9 @@ static_files = ["./functions/emitir-recibo/fonts/*.ttf"]
 [functions.enviar-teste]
 verify_jwt = true
 entrypoint = "./functions/enviar-teste/index.js"
+
+# "Actualizar do pretix" no separador RCP (SPEC 18.4): sessão de quem carrega. O token do pretix
+# fica só nos segredos das Edge Functions (PRETIX_API_TOKEN), nunca aqui.
+[functions.pretix-inscritos]
+verify_jwt = true
+entrypoint = "./functions/pretix-inscritos/index.js"
