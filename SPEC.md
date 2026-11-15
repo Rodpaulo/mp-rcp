@@ -246,6 +246,43 @@ Depois: fotografia da mesa no fim; na reconciliação, conferir os números das 
 ### 13.10 Depois do RCP06
 Secção Biblioteca no admin (catálogo, movimentos por edição, correcções, `desaparecido`; feita a 31 de Outubro de 2026, ver §15); eventual leitura de ISBN pela câmara se o volume justificar; percurso de cada livro como conteúdo de newsletter quando houver meses de história.
 
+### 13.11 Devolvo um livro (acrescentado a 15 de Novembro de 2026)
+
+**Desvio de âmbito, registado.** A devolução já existia (§13.4 e §13.5: um número que já existe e está `levado` volta à mesa por `deixar_livro`, com o estado `returned`), mas só dentro de "Deixo um livro", onde quem vem devolver não a encontra. A 15 de Novembro o Miguel decidiu dar-lhe um botão próprio. Condições: sem migração; nenhuma função da base muda; "Deixo um livro" continua a aceitar devoluções, como hoje.
+
+**Página `/biblioteca`**
+- Terceiro botão grande, por baixo dos outros dois, com o mesmo aspecto: **Devolvo um livro**. Abre o seu formulário no lugar da lista; "Voltar" fecha.
+- Título "Devolvo um livro" e a frase "Escreve o número do autocolante que está na contracapa."
+- Campo "Número do autocolante", como nos outros formulários. Ao sair do campo (ou 600 ms depois de parar de escrever), `livro_por_numero`:
+  - livro `levado` ou `desaparecido` → mostra "«Título», de Autor" (sem autor, só o título);
+  - livro `na_mesa` → "Este livro já está na mesa. Se o tens na mão, diz à organização.";
+  - número que não existe → "Não encontramos esse número. Confirma o autocolante na contracapa.";
+  - número fora do padrão → "Esse número não parece certo. Escreve só os algarismos do autocolante."
+- Campo "O teu email (opcional)", preenchido de `localStorage` (`mp_rcp_email`) se existir, como em "Deixo um livro".
+- Botão "Devolvo este", só activo depois de a consulta confirmar um livro `levado` ou `desaparecido`. Assim, este formulário nunca cria um livro novo.
+- Ao confirmar, chama `deixar_livro(número, null, null, null, email)`:
+  - `returned` → confirmação "Bem-vindo de volta, «Título». Obrigado por o trazeres." e "Voltar à mesa";
+  - `number_in_use` → "Este livro já está na mesa. Se o tens na mão, diz à organização.";
+  - `missing_title` (o número deixou de existir entre a consulta e o envio) → "Não encontramos esse número. Confirma o autocolante na contracapa.";
+  - `invalid_number`, `invalid_email`, `no_open_edition` e erro de rede → as frases que a página já usa.
+- Guarda o email em `localStorage` como os outros formulários (só se ainda não havia nenhum).
+
+**O que não muda**
+- Base: a devolução continua a ser um movimento `entrada`, com `source = 'self'`, e o livro volta a `na_mesa`. Conta nas "entradas" de `biblioteca_resumo` e no "já esteve em N casas", como hoje.
+- Admin: nenhuma alteração. No histórico do livro, a devolução aparece como entrada.
+- Materiais: o cartão impresso não muda nesta versão. Os quatro passos continuam certos; o quinto ("Devolves um livro? Regista o número que está na contracapa.") fica para a próxima impressão, se a direcção quiser.
+
+**Regras de construção**
+- Só `src/pages/Biblioteca.jsx` (e, se for preciso, `Biblioteca.css`) mudam. Sem dependências novas.
+- A página `/biblioteca` vai no ficheiro público. O §17.6 diz que esse ficheiro "só pode diminuir"; este formulário acrescenta-lhe pouco (estimativa: menos de 2 kB antes de comprimir) e reaproveita os campos e a consulta que já existem. Desvio registado aqui.
+- Calendário: o mesmo do §18.11. Nada vai para produção entre 28 de Novembro e 2 de Dezembro de 2026; se não estiver pronto e controlado até 27 de Novembro, publica-se a partir de 3 de Dezembro e, no RCP07, as devoluções fazem-se por "Deixo um livro", como hoje.
+
+**Controlos antes de publicar** (na pré-visualização da Vercel, com livros de teste)
+- Levar um livro de teste e devolvê-lo por "Devolvo um livro": volta à lista "Na mesa hoje", com "já esteve em 1 casa".
+- Tentar devolver um livro que está na mesa, um número que não existe e um número mal escrito: aparece a frase certa e o botão não deixa avançar.
+- No admin, o histórico do livro mostra a saída e a entrada.
+- "Deixo um livro" continua a aceitar a devolução de um livro levado.
+
 ## 14. Rede (acrescentado a 30 de Outubro de 2026)
 
 ### 14.1 Desvio de âmbito, registado
