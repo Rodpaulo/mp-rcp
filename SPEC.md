@@ -7,9 +7,9 @@ Alterações de âmbito passam por aqui antes de passarem para o código.
 
 ## 1. O que é
 
-Uma aplicação web (PWA ligeira) da Matinés Pensantes para o *Regresso à Casa de Partida* (RCP), o encontro mensal da associação no Hotel Pestana Brussels Schuman. Cobre o que o site e o MailPoet não cobrem: **quem esteve presente**. Versões seguintes cobrirão a Biblioteca Circulante e mecanismos leves de envolvimento dos participantes.
+Uma aplicação web (PWA ligeira) da Matinés Pensantes para o *Regresso à Casa de Partida* (RCP), o encontro mensal da associação no Hotel Pestana Brussels Schuman. Cobre o que a plataforma de inscrições não cobre: **quem esteve presente**. Versões seguintes cobrirão a Biblioteca Circulante e mecanismos leves de envolvimento dos participantes.
 
-A inscrição nos eventos **não** é feita aqui: continua no site (MailPoet agora; pretix depois da migração do site, em 2027).
+A inscrição nos eventos **não** é feita aqui. A partir do RCP07 (1 de Dezembro de 2026), faz-se no **pretix** (`pretix.eu`, organizador `matinespensantes`; o RCP07 em `https://pretix.eu/matinespensantes/rcp07/`). A aplicação lê de lá a lista de inscritos (§18). Até ao RCP06, inclusive, a inscrição fazia-se no site, pelo MailPoet: é só história, e as inscrições dessas edições ficam com a origem `mailpoet`.
 
 ## 2. Princípios de desenho
 
@@ -63,8 +63,10 @@ A entidade central é a **pessoa**, não o evento. É isso que permite, ao longo
 people          id, email (único, minúsculas), name (opcional),
                 newsletter_consent, newsletter_consent_at, created_at,
                 associado_interesse, associado_interesse_at (migração 006)
-editions        id, code ('RCP06'), title, event_date, is_open (só uma aberta), room_count
-registrations   person_id + edition_id (chave), source ('mailpoet'|'pretix'|'manual')
+editions        id, code ('RCP06'), title, event_date, is_open (só uma aberta), room_count,
+                pretix_event (migração 015, §18)
+registrations   person_id + edition_id (chave), source ('mailpoet'|'pretix'|'manual'),
+                cancelled_at (migração 015, §18)
 checkins        person_id + edition_id (chave), source ('qr'|'manual'), checked_in_at
 ```
 
@@ -80,7 +82,7 @@ Regras:
 
 - **Público (anon)**: não lê nem escreve tabelas. Só pode chamar a função `check_in(p_email, p_newsletter)` e, desde a migração 006, `check_in_associado(p_email, p_newsletter, p_associado_interesse)`, que chama `check_in` por dentro e, com o interesse verdadeiro e a presença registada, marca `associado_interesse` e `associado_interesse_at` em `people`. As duas correm com `security definer`, têm as mesmas permissões (`anon` e `authenticated`) e devolvem apenas `{status, edition}`. `check_in_associado` tem nome próprio e os três parâmetros obrigatórios, para nunca se confundir com `check_in`; a `check_in` não foi alterada. `status` ∈ `ok`, `already`, `invalid_email`, `no_open_edition`. Nunca devolve nome nem se a pessoa estava inscrita — a página pública não pode servir para testar emails de terceiros.
 - **Direcção (authenticated)**: acesso total às quatro tabelas por RLS. Só existem duas contas, criadas à mão no painel. **O registo livre de utilizadores está desligado no Supabase** — é a linha que impede estranhos de verem os dados.
-- Importação de inscritos pela função `import_registrations(p_edition_code, p_emails[])`, reservada a utilizadores autenticados, repetível sem duplicar.
+- Importação de inscritos pela função `import_registrations(p_edition_code, p_emails[])`, reservada a utilizadores autenticados, repetível sem duplicar. Até ao RCP06; a partir da migração 016, o admin usa `importar_inscritos` (§18.5), e a `import_registrations` fica na base, sem uso.
 - Chaves do Supabase (modelo novo): a **publishable key** (`sb_publishable_...`) é a única usada pela aplicação; corresponde ao papel `anon` sem sessão e `authenticated` com sessão. A **secret key** (sucessora da service_role) nunca é usada nem copiada para lado nenhum.
 - `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` em `.env` local e nas variáveis de ambiente da Vercel; `.env` no `.gitignore`. Cópia no Bitwarden da associação, para que a Ana as tenha se for preciso.
 - A publishable key é pública por natureza; a protecção está no RLS e na função, não no segredo da chave.
@@ -129,19 +131,27 @@ Depois do login:
 - **Cabeçalho**: edição aberta (código, título, data) e os três números: inscritos · presentes · dos quais walk-ins. Actualiza em tempo real (Supabase Realtime na tabela `checkins`) ou por refresh a cada 15 s — o que for mais simples e fiável.
 - **Lista de presenças**: email, hora, origem (qr/manual), inscrito sim/não. Ordenada pela mais recente.
 - **Inscritos ausentes**: lista dos inscritos ainda sem presença (serve para marcar presença à mão no fim, se a Ana quiser: botão "Marcar presente" → `checkins.source = 'manual'`).
-- **Importar inscritos**: área de texto onde se cola o CSV exportado do MailPoet (ou upload do ficheiro). A aplicação extrai a coluna de email (detecta a coluna pelo cabeçalho `email`, sem distinção de maiúsculas), mostra "N emails encontrados", e ao confirmar chama `import_registrations`. Mostra "N inscrições novas; M já existiam".
+- **Importar inscritos** (a partir do RCP07; os textos e as regras completas estão no §18.7):
+  - Primeiro, o botão **Actualizar do pretix**, com a frase "Lê no pretix as inscrições confirmadas e junta-as aos inscritos. Podes carregar as vezes que quiseres: ninguém fica repetido." Chama a função `pretix-inscritos` (§18.4) e mostra o resultado: novos, já lá estavam, cancelados.
+  - Por baixo, como alternativa, o ficheiro: "Ou cola aqui o CSV exportado do pretix, ou escolhe o ficheiro." A aplicação extrai a coluna de email (detecta a coluna pelo cabeçalho `email`, sem distinção de maiúsculas nem hífenes), mostra "N emails encontrados", e ao confirmar chama `importar_inscritos` (§18.5), com a origem `pretix`. Mostra "N inscrições novas; M já lá estavam".
+  - Até ao RCP06, o texto era "Cola aqui o CSV exportado do MailPoet, ou escolhe o ficheiro.", e a função era a `import_registrations`, com a origem `mailpoet`.
 - **Contagem de sala**: campo numérico + guardar → `editions.room_count`.
-- **Exportar CSV**: presenças da edição (email, hora, origem, inscrito, consentimento newsletter). Serve para a reconciliação e para passar os consentimentos ao MailPoet.
-- **Edições**: lista; botão "Abrir esta edição" (fecha a anterior); criar edição (código, título, data). É assim que se passa do RCP06 ao RCP07 sem tocar na base.
+- **Exportar CSV**: presenças da edição (email, hora, origem, inscrito, consentimento newsletter). Serve para a reconciliação e para passar os consentimentos à lista da newsletter (até ao RCP06, o MailPoet).
+- **Edições**: lista; botão "Abrir esta edição" (fecha a anterior); criar edição (código, título, data e, desde a migração 015, "Evento no pretix", §18.2). É assim que se passa de uma edição à seguinte sem tocar na base.
 - Sair.
 
 Funciona em telemóvel (a Ana pode querer ver os números na sala) e em desktop (a reconciliação faz-se à secretária).
 
 ## 9. Operação por edição
 
-Antes (véspera): criar/abrir a edição no admin → exportar segmento do MailPoet → colar no admin → conferir o número.
+A partir do RCP07:
+
+Antes: criar a edição no admin, com o evento do pretix (ex.: `rcp07`) → abri-la → **Actualizar do pretix** → conferir o número com o do pretix. Na véspera, e se quiseres na manhã do dia, carregar outra vez: só entram as inscrições novas e só se marcam os cancelamentos novos.
+Se o botão falhar (pretix indisponível, chave por configurar): exportar do pretix as encomendas pagas em CSV → colar no admin → conferir o número.
 Durante: nada. Cartões QR na porta, nas mesas e na mesa dos livros.
-Depois (20 minutos): registar contagem de sala → exportar CSV → reconciliar (inscritos, presentes, walk-ins, no-show estimado, cobertura do QR) → consentimentos para o MailPoet → fechar a edição.
+Depois (20 minutos): registar contagem de sala → exportar CSV → reconciliar (inscritos, presentes, walk-ins, no-show estimado, cobertura do QR) → consentimentos para a lista da newsletter → fechar a edição.
+
+Até ao RCP06 (história): na véspera, exportar o segmento do MailPoet e colá-lo no admin; depois, passar os consentimentos ao MailPoet.
 
 ## 10. PWA e materiais
 
@@ -166,7 +176,9 @@ Se um destes falhar a 30 Out: Plano B — cartões ficam na gaveta, presença fa
 
 Primeiro, independentemente de funcionalidades: transferir o projecto Supabase, o repositório e o deploy da Vercel para contas em nome da associação (geral@), e registar tudo no cartão "Contas em nome da associação".
 
-Depois, por ordem provável: pergunta ao convidado na inscrição · questionário nativo ligado à pessoa · link personalizado no lembrete (um toque, sem escrever email) · briefing automático para a Ana na véspera · ligação pretix → pessoas (depois do cutover do site, Fevereiro de 2027). Tudo na mesma aplicação; nunca mais do que isto.
+Depois, por ordem provável: pergunta ao convidado na inscrição · questionário nativo ligado à pessoa · link personalizado no lembrete (um toque, sem escrever email) · briefing automático para a Ana na véspera. Tudo na mesma aplicação; nunca mais do que isto.
+
+A ligação pretix → inscritos estava aqui para depois da mudança do site, em Fevereiro de 2027. Foi antecipada para o RCP07 (1 de Dezembro de 2026), porque as inscrições passam ao pretix nessa edição; está no §18.
 
 ## 13. Biblioteca Circulante (acrescentado a 24 de Outubro de 2026)
 
@@ -647,3 +659,134 @@ Estados que o mapa acima não nomeia: Desistiu, Não admitido e Saído como Canc
 - **O ficheiro público só pode diminuir.** O admin inteiro carrega com `React.lazy` a partir de `App.jsx`: o painel, o login, o `Admin.css` e os módulos saem do ficheiro da página pública.
 - Ficheiros: `src/admin/mesa.css` (CSS partilhado da apresentação); `src/admin/mesa/` com os componentes comuns, só de apresentação: `Cabecalho.jsx`, `BarraNumeros.jsx`, `Mesa.jsx`, `ListaMesa.jsx`, `FichaCartao.jsx`, `Dados.jsx`, `Accoes.jsx`, `Pilula.jsx`. O `Admin.css` fica com o que é do painel do RCP; os CSS dos módulos perdem o que passa para o partilhado.
 - Tipografia e cores só as do manual: Rajdhani e Montserrat (já carregadas do Google Fonts), azul-marinho para todo o texto corrido, cinzento #828487 só em notas e rótulos, turquesa escura nas ligações. Sem sombras, gradientes nem ícones novos. Sem dependências novas.
+
+## 18. Inscrições pelo pretix (acrescentado a 15 de Novembro de 2026)
+
+### 18.1 Desvio de âmbito, registado
+A partir do RCP07 (1 de Dezembro de 2026), as inscrições fazem-se no pretix (`pretix.eu`, organizador `matinespensantes`). O §12 deixava a ligação ao pretix para depois da mudança do site, em Fevereiro de 2027; foi antecipada. O CSV continua a existir como alternativa (§8). Fases: 1) este SPEC; 2) migrações 015 a 017, a função `pretix-inscritos` e os ecrãs, num ramo próprio (`pretix`), com paragem antes de publicar.
+
+Afasta-se de duas regras anteriores, e só nisto:
+- **§4** ("não há servidor intermédio nem funções serverless"): uma Edge Function nova, `pretix-inscritos`, no mesmo projecto, na UE, como as do §16.
+- **§6** (a importação faz-se pela `import_registrations`): passa a fazer-se pela `importar_inscritos` (§18.5). A `import_registrations` não se edita nem se apaga (migração aplicada); fica sem uso.
+
+### 18.2 Ligação de cada edição a um evento do pretix
+- `editions.pretix_event` (migração 015): a forma curta do evento no pretix, a que aparece no endereço (`rcp07` em `https://pretix.eu/matinespensantes/rcp07/`). Facultativa; única quando preenchida; só minúsculas, algarismos, hífenes e pontos (a base confirma-o por `check`). As edições até ao RCP06 ficam vazias.
+- O organizador fica na tabela `configuracao` (§16.10), chave `pretix_organizador`, com o valor `matinespensantes` (migração 015). É uma chave por associação, não por edição, e a `configuracao` é o sítio onde o repositório guarda os valores que podem mudar sem publicar código. Aparece no ecrã Configuração dos Associados, como as outras.
+- A migração 015 preenche `pretix_event = 'rcp07'` na edição `RCP07`, se já existir e o campo estiver vazio. Para as edições seguintes, o formulário "Nova edição" ganha o campo **Evento no pretix**, preenchido à partida com o código em minúsculas (`RCP08` → `rcp08`), que se pode mudar ou apagar.
+- Uma edição já criada e sem evento mostra, na tabela das Edições, a ligação **Ligar ao pretix**, que pede a forma curta e a grava. Não há outra edição de edições.
+
+### 18.3 O que conta como inscrição
+O pretix guarda cada inscrição como uma **encomenda**. De cada encomenda lê-se o email (`email` da encomenda) e o nome (o nome do participante da primeira posição, se existir). Uma encomenda é uma pessoa.
+
+| Estado da encomenda no pretix | O que acontece |
+|---|---|
+| paga / confirmada (`p`) | entra nos inscritos. O RCP é gratuito: a encomenda fica paga logo que é feita. |
+| cancelada (`c`) | não entra. Se a pessoa já estava inscrita por uma encomenda do pretix, marca-se (§18.6). |
+| pendente (`n`), incluindo as que esperam aprovação | não entra (ainda não é inscrição). Se passar a paga, entra no carregamento seguinte. |
+| expirada (`e`) | não entra. |
+| de teste (modo de teste do pretix) | nunca entra. |
+
+- A lista de espera é outra coisa no pretix, fora das encomendas: fica de fora nesta versão.
+- Um email com uma encomenda paga e outra cancelada conta como inscrito: a paga manda.
+- Emails normalizados como em todo o lado (trim + minúsculas); o que não parecer email não entra e é contado à parte.
+- **Nome**: preenche `people.name` só quando está vazio. Nunca substitui um nome que já lá está.
+- Os códigos de estado e os nomes dos campos acima confirmam-se na documentação da API do pretix na Fase 2, antes de escrever a função.
+
+### 18.4 Função `pretix-inscritos` (Edge Function, `verify_jwt = true`)
+- Só para quem tem sessão: a Supabase verifica o JWT, e a função fala com a base com esse JWT e a chave pública (`SUPABASE_ANON_KEY`), como a `emitir-recibo` (§16.17). Nunca usa a chave de serviço. Recusa contas sem linha em `perfis`.
+- Corpo vazio: trabalha sempre sobre a **edição aberta**. Assim, o botão nunca importa para a edição errada.
+- Passos:
+  1. lê a edição aberta e o seu `pretix_event`; lê `pretix_organizador` na `configuracao`; lê o segredo `PRETIX_API_TOKEN`. Se faltar um destes, pára antes de chamar o pretix;
+  2. chama `GET https://pretix.eu/api/v1/organizers/{organizador}/events/{evento}/orders/`, com o cabeçalho `Authorization: Token <segredo>`, pedindo só as encomendas fora do modo de teste;
+  3. **paginação**: segue o endereço `next` de cada página até vir vazio. No máximo 40 páginas; mais do que isso é um erro, não um resultado a meio;
+  4. cada pedido ao pretix tem 15 segundos para responder;
+  5. separa os emails em inscritos (com o nome) e cancelados (§18.3);
+  6. chama `importar_inscritos` (§18.5) **uma só vez**, com as duas listas, e devolve o resultado.
+- Se uma página falhar, nada é gravado: ou entra a lista inteira, ou nada.
+- **Sem dependências novas**: o pretix chama-se com `fetch`; a única biblioteca é a `@supabase/supabase-js`, como nas outras funções.
+- Ficheiro: `supabase/functions/pretix-inscritos/index.js`; no `config.toml`, `verify_jwt = true`.
+
+### 18.5 Função da base `importar_inscritos` (migração 016)
+`importar_inscritos(p_edition_code text, p_inscritos jsonb, p_cancelados text[] default '{}')` → `jsonb`
+- `p_inscritos`: lista de `{email, nome}` (o `nome` pode faltar). `p_cancelados`: emails.
+- Usada pelos dois caminhos: o botão (pela função `pretix-inscritos`) e o CSV (directamente pelo admin, só com emails e sem cancelados).
+- Grava sempre a origem **`pretix`** nas inscrições que cria. A base já aceita este valor (`registrations.source` é texto, sem lista fechada).
+- Corre com a sessão de quem chama (security invoker); o RLS de `authenticated` aplica-se. Permissão de execução só para `authenticated`.
+- **Idempotente**: carregar várias vezes dá o mesmo resultado. A pessoa encontra-se pelo email (`people.email`, único), como em toda a aplicação; cria-se se não existir. Uma inscrição já existente não se duplica (chave `person_id + edition_id`) e não muda de origem.
+- Devolve `{novos, ja_estavam, cancelados, marcados, invalidos}`:
+  - `novos`: inscrições criadas agora, mais as que estavam marcadas como canceladas e voltaram a ter uma encomenda paga (a marca sai);
+  - `ja_estavam`: inscrições que já existiam, sem marca;
+  - `cancelados`: emails cancelados no pretix que não entraram;
+  - `marcados`: destes, os que estavam inscritos e ficaram marcados agora (§18.6);
+  - `invalidos`: valores que não parecem email.
+
+### 18.6 Cancelamentos depois de importados
+Regra: **marcar, nunca apagar.**
+- `registrations.cancelled_at` (migração 015), vazio por omissão. Quando o pretix diz que a encomenda de alguém já inscrito foi cancelada, grava-se a data e hora em `cancelled_at`. A linha fica, como história.
+- Só se marcam inscrições com a origem `pretix`. As `mailpoet` e `manual` nunca são tocadas pelo botão.
+- **A presença manda.** Um cancelado que fez check-in conta como presente e como inscrito (não como walk-in), mesmo com a marca. Um cancelado sem check-in não conta em Inscritos nem em Ausentes.
+- Se a pessoa voltar a inscrever-se (encomenda paga nova), a marca sai no carregamento seguinte.
+- Os números passam a vir da vista nova `edition_summary_v2` (migração 017), com as mesmas colunas da `edition_summary` e esta regra. A `edition_summary` não muda e fica sem uso. O painel, a barra de números do RCP (§17.3) e a lista de Ausentes passam a seguir a mesma regra.
+- A lista de Presenças não muda. A exportação CSV ganha a coluna "cancelado no pretix" (sim/não).
+
+### 18.7 Ecrãs (separador RCP, secção "Importar inscritos")
+Convenções do §17: botão principal carmim para **Actualizar do pretix**; o "Importar" do ficheiro passa a botão secundário (contorno turquesa escura), por ser a alternativa. Todos os botões com 44 px de altura.
+
+Textos, tal como ficam:
+- Título: **Importar inscritos**.
+- Frase: "Lê no pretix as inscrições confirmadas e junta-as aos inscritos. Podes carregar as vezes que quiseres: ninguém fica repetido."
+- Botão: **Actualizar do pretix**. Enquanto espera: "Um momento…".
+- Edição sem evento: o botão fica desactivado, com "Esta edição não está ligada a um evento do pretix. Liga-a em Edições, mais abaixo."
+- Resultado: "{novos} inscrições novas; {ja_estavam} já lá estavam; {cancelados} canceladas no pretix, não entraram." Se `marcados` for maior do que zero, mais uma linha: "{marcados} já estavam na lista e ficaram marcadas como canceladas." Se `invalidos` for maior do que zero: "{invalidos} ignoradas por não terem um email válido."
+- Erros, em linguagem simples:
+  - sem chave configurada: "Falta configurar a ligação ao pretix. Usa o ficheiro, mais abaixo."
+  - sem organizador na configuração: o mesmo texto;
+  - chave recusada pelo pretix: "O pretix recusou a ligação. A chave pode ter expirado. Usa o ficheiro, mais abaixo."
+  - evento não encontrado: "O pretix não encontrou o evento «{pretix_event}». Confirma a forma curta em Edições."
+  - pretix indisponível (sem resposta em 15 s, erro do servidor, demasiados pedidos): "O pretix não está a responder. Tenta daqui a uns minutos, ou usa o ficheiro."
+  - demasiadas encomendas (mais de 40 páginas): "O pretix devolveu demasiadas encomendas. Usa o ficheiro."
+  - sem edição aberta: "Não há nenhuma edição aberta neste momento."
+  - qualquer outro: "Não foi possível guardar. Tenta outra vez."
+- Por baixo, com um filete: "Ou cola aqui o CSV exportado do pretix, ou escolhe o ficheiro." Na linha seguinte, em cinzento: "No pretix: Encomendas → Exportar, só as pagas." O resto do ecrã do ficheiro fica como está; o resultado diz "{novos} inscrições novas; {ja_estavam} já lá estavam".
+- Edições: campo **Evento no pretix** no formulário "Nova edição"; coluna "Pretix" na tabela; a ligação **Ligar ao pretix** nas edições sem evento (§18.2).
+
+### 18.8 Segredo
+- O token da API do pretix fica **só** nos segredos das Edge Functions da Supabase, com o nome `PRETIX_API_TOKEN`. Nunca no repositório, nunca no código do browser, nunca numa variável `VITE_`, nunca em ficheiros de exemplo (com ou sem valor: o `.env.example` não muda). Guardado também no Bitwarden da associação.
+- Do lado do pretix: uma equipa própria ("API RCP"), com acesso a todos os eventos do organizador e só com a permissão de **ver encomendas**. O token é dessa equipa. Se se perder ou sair de uma pessoa, revoga-se no pretix e grava-se um novo na Supabase.
+- A função nunca devolve o token nem o escreve nos registos.
+
+### 18.9 Privacidade
+- Os registos de erro (logs) das funções guardam só o mínimo: o passo, o código da edição, o estado HTTP do pretix e as contagens. Nunca emails, nomes, o corpo das respostas do pretix ou o token.
+- A resposta da função ao browser leva só as contagens. Não há lista de nomes nem de emails.
+- Nenhum dado pessoal no repositório: nem exportações do pretix, nem exemplos com emails reais. Os testes usam emails inventados em `example.org`.
+- Os dados que entram (email e nome) são os que o MailPoet já dava. O texto de privacidade da página (§10) continua verdadeiro; a página de inscrição do pretix tem de dizer que a lista de inscritos é usada para o registo de presenças (confirmar no pretix).
+
+### 18.10 Migrações (aditivas)
+- **015** (`015_pretix.sql`): `editions.pretix_event` (texto, facultativo, único quando preenchido, com `check` de formato); `registrations.cancelled_at` (timestamptz, vazio); a chave `pretix_organizador` na `configuracao` (`matinespensantes`, `on conflict do nothing`); `pretix_event = 'rcp07'` na edição `RCP07`, se existir e estiver vazio.
+- **016** (`016_importar_inscritos.sql`): a função `importar_inscritos` (§18.5), só com `grant` para `authenticated`.
+- **017** (`017_edition_summary_v2.sql`): a vista `edition_summary_v2` (`security_invoker`), com as mesmas colunas da `edition_summary` e a regra do §18.6.
+- Nenhuma coluna, função, vista ou política existente muda; a `import_registrations` e a `edition_summary` ficam como estão. Ordem: 015 → 016 → 017, todas antes de publicar a função e antes de os ecrãs chegarem a `main`.
+
+### 18.11 Calendário
+- **Congelamento: nada vai para produção entre 28 de Novembro e 2 de Dezembro de 2026, inclusive**, por causa do RCP07 (1 de Dezembro). "Produção" quer dizer, aqui: correr migrações, publicar ou mudar Edge Functions, mudar segredos e juntar ao `main` (a Vercel publica o `main`).
+- Até **27 de Novembro**: migrações corridas ("tudo verde"), função publicada, segredo gravado, ecrãs no `main` e os controlos do §18.12 feitos com o RCP07 verdadeiro.
+- Se a 27 de Novembro não estiver tudo pronto e controlado, não se publica: **o RCP07 usa a importação CSV** que existe hoje, com a exportação do pretix, e o resto publica-se a partir de **3 de Dezembro**. Nesse caso, as inscrições do RCP07 ficam com a origem `mailpoet` (é o que a `import_registrations` grava) e não se corrigem.
+- Migrações já corridas não atrapalham o CSV antigo: são aditivas.
+
+### 18.12 Controlos antes de publicar
+- Ramo `pretix`, com pré-visualização na Vercel, ligado à mesma Supabase.
+- Na pré-visualização, com o RCP07: carregar uma vez e conferir os números com a lista de encomendas pagas do pretix; carregar outra vez e ver "0 inscrições novas"; cancelar no pretix uma encomenda de teste (email inventado) e ver a marca; inscrever-se outra vez com o mesmo email e ver a marca sair; uma encomenda em modo de teste não entra.
+- Erros: evento com forma curta errada; segredo vazio ou errado; o texto certo aparece em cada caso.
+- CSV: colar uma exportação verdadeira do pretix (encomendas pagas), ver a coluna de email encontrada, a contagem certa e a origem `pretix` gravada.
+- Logs da função na Supabase sem emails nem nomes.
+- `git grep` sem tokens, emails reais ou exportações.
+
+### 18.13 Decisões do Miguel (15 de Novembro de 2026)
+- Cancelamentos: marcar, nunca apagar, com a presença a mandar (§18.6). Aprovado.
+- Uma encomenda é uma pessoa (§18.3): o pretix do RCP07 aceita uma só pessoa por encomenda.
+- Nome: preenche `people.name` só quando está vazio (§18.3). Aprovado.
+- Organizador na `configuracao`, chave `pretix_organizador` (§18.2). Aprovado.
+- A edição RCP07 já existe na base: a migração 015 preenche-lhe `rcp07`.
+- O RCP07 não pede aprovação no pretix: as encomendas ficam pagas logo.
+- A coluna "cancelado no pretix" na exportação de presenças fica (§18.6).
+- O texto da página de inscrição do pretix sobre o uso da lista para o registo de presenças fica a cargo da direcção, no pretix (§18.9).
