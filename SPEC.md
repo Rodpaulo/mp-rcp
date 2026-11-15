@@ -690,15 +690,15 @@ O pretix guarda cada inscrição como uma **encomenda**. De cada encomenda lê-s
 - Um email com uma encomenda paga e outra cancelada conta como inscrito: a paga manda.
 - Emails normalizados como em todo o lado (trim + minúsculas); o que não parecer email não entra e é contado à parte.
 - **Nome**: preenche `people.name` só quando está vazio. Nunca substitui um nome que já lá está.
-- Os códigos de estado e os nomes dos campos acima confirmam-se na documentação da API do pretix na Fase 2, antes de escrever a função.
+- Confirmado na documentação da API do pretix (15 de Novembro de 2026; fonte em `github.com/pretix/pretix`, `doc/api/`): os estados são `n`, `p`, `e` e `c`; as encomendas gratuitas nascem pagas; `require_approval` só conta com a encomenda pendente; os campos são `email`, `status`, `testmode` e, nas posições, `attendee_name` (as posições canceladas não vêm, por omissão).
 
 ### 18.4 Função `pretix-inscritos` (Edge Function, `verify_jwt = true`)
 - Só para quem tem sessão: a Supabase verifica o JWT, e a função fala com a base com esse JWT e a chave pública (`SUPABASE_ANON_KEY`), como a `emitir-recibo` (§16.17). Nunca usa a chave de serviço. Recusa contas sem linha em `perfis`.
 - Corpo vazio: trabalha sempre sobre a **edição aberta**. Assim, o botão nunca importa para a edição errada.
 - Passos:
   1. lê a edição aberta e o seu `pretix_event`; lê `pretix_organizador` na `configuracao`; lê o segredo `PRETIX_API_TOKEN`. Se faltar um destes, pára antes de chamar o pretix;
-  2. chama `GET https://pretix.eu/api/v1/organizers/{organizador}/events/{evento}/orders/`, com o cabeçalho `Authorization: Token <segredo>`, pedindo só as encomendas fora do modo de teste;
-  3. **paginação**: segue o endereço `next` de cada página até vir vazio. No máximo 40 páginas; mais do que isso é um erro, não um resultado a meio;
+  2. chama `GET https://pretix.eu/api/v1/organizers/{organizador}/events/{evento}/orders/`, com o cabeçalho `Authorization: Token <segredo>`, com `testmode=false` (só as encomendas fora do modo de teste) e `include` só para os campos precisos (`status`, `email`, `testmode`, `positions.attendee_name`). Assim, o resto dos dados das encomendas nem sai do pretix;
+  3. **paginação**: segue o endereço `next` de cada página até vir vazio. O pretix dá 50 encomendas por página, no máximo. No máximo 40 páginas (2000 encomendas); mais do que isso é um erro, não um resultado a meio. O limite do pretix (360 pedidos por minuto por organizador) fica muito acima disto;
   4. cada pedido ao pretix tem 15 segundos para responder;
   5. separa os emails em inscritos (com o nome) e cancelados (§18.3);
   6. chama `importar_inscritos` (§18.5) **uma só vez**, com as duas listas, e devolve o resultado.
@@ -741,9 +741,9 @@ Textos, tal como ficam:
 - Erros, em linguagem simples:
   - sem chave configurada: "Falta configurar a ligação ao pretix. Usa o ficheiro, mais abaixo."
   - sem organizador na configuração: o mesmo texto;
-  - chave recusada pelo pretix: "O pretix recusou a ligação. A chave pode ter expirado. Usa o ficheiro, mais abaixo."
-  - evento não encontrado: "O pretix não encontrou o evento «{pretix_event}». Confirma a forma curta em Edições."
-  - pretix indisponível (sem resposta em 15 s, erro do servidor, demasiados pedidos): "O pretix não está a responder. Tenta daqui a uns minutos, ou usa o ficheiro."
+  - chave recusada pelo pretix (estado 401): "O pretix recusou a ligação. A chave pode ter sido revogada. Usa o ficheiro, mais abaixo."
+  - evento não encontrado ou sem acesso (estado 403: o pretix não distingue os dois casos): "O pretix não encontrou o evento «{pretix_event}», ou a ligação não tem acesso a ele. Confirma a forma curta em Edições."
+  - pretix indisponível (sem resposta em 15 s, erro do servidor, estado 429 de demasiados pedidos): "O pretix não está a responder. Tenta daqui a uns minutos, ou usa o ficheiro."
   - demasiadas encomendas (mais de 40 páginas): "O pretix devolveu demasiadas encomendas. Usa o ficheiro."
   - sem edição aberta: "Não há nenhuma edição aberta neste momento."
   - qualquer outro: "Não foi possível guardar. Tenta outra vez."
